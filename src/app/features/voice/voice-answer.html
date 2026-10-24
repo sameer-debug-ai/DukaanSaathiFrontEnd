@@ -1,0 +1,117 @@
+@let d = data();
+@switch (d.kind) {
+  @case ('stock_list') {
+    @let s = stock()!;
+    <div class="tiles">
+      <div class="tile danger">
+        <span class="material-symbols-outlined" aria-hidden="true">block</span>
+        <div>
+          <div class="num">{{ s.outCount }}</div>
+          <div class="label">{{ 'stock.out' | translate }}</div>
+        </div>
+      </div>
+      @if (!s.onlyOut) {
+        <div class="tile warn">
+          <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+          <div>
+            <div class="num">{{ s.lowCount }}</div>
+            <div class="label">{{ 'stock.low' | translate }}</div>
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (!s.out.length && !s.low.length) {
+      <div class="empty">
+        <span class="material-symbols-outlined icon-filled text-ok" aria-hidden="true">check_circle</span>
+        <p>{{ message() }}</p>
+      </div>
+    } @else {
+      <div class="lists">
+        @if (s.out.length) {
+          <section>
+            <h3 class="group danger">{{ 'stock.out' | translate }} <span class="count">{{ s.out.length }}</span></h3>
+            <ul>
+              @for (i of s.out; track i.id) {
+                <li>
+                  <button type="button" (click)="open.emit(['/products', i.id])">
+                    <span class="name">{{ i.name }}</span>
+                    <span class="qty">0 {{ i.unit }}</span>
+                    <span class="material-symbols-outlined chev" aria-hidden="true">chevron_right</span>
+                  </button>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+        @if (s.low.length) {
+          <section>
+            <h3 class="group warn">{{ 'stock.low' | translate }} <span class="count">{{ s.low.length }}</span></h3>
+            <ul>
+              @for (i of s.low; track i.id) {
+                <li>
+                  <button type="button" (click)="open.emit(['/products', i.id])">
+                    <span class="name">
+                      {{ i.name }}
+                      <small>{{ 'stock.minimum' | translate: { qty: i.lowStockThreshold } }}</small>
+                    </span>
+                    <span class="qty warn">{{ 'stock.left' | translate: { qty: i.stock, unit: i.unit } }}</span>
+                    <span class="material-symbols-outlined chev" aria-hidden="true">chevron_right</span>
+                  </button>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+    }
+    <button type="button" class="link" (click)="open.emit(['/products', 'alerts'])">
+      {{ 'voice.answer.openAlerts' | translate }}
+      <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+    </button>
+  }
+
+  @case ('stock_item') {
+    <button type="button" class="card" (click)="open.emit(['/products', d.productId])">
+      <div class="card-top">
+        <span class="card-title">{{ d.name }}</span>
+        <app-stock-badge [status]="d.status" />
+      </div>
+      <div class="big-num">{{ d.stock }} <span>{{ d.unit }}</span></div>
+      <div class="sub">{{ 'stock.minimum' | translate: { qty: d.lowStockThreshold } }}</div>
+    </button>
+  }
+
+  @case ('balance') {
+    <button type="button" class="card" (click)="open.emit(['/customers', d.customerId])">
+      <div class="card-top">
+        <span class="card-title">{{ d.name }}</span>
+        <span class="material-symbols-outlined chev" aria-hidden="true">chevron_right</span>
+      </div>
+      <div class="big-num" [class.text-danger]="d.balance > 0" [class.text-ok]="d.balance <= 0">{{ d.balance | inr }}</div>
+      <div class="sub">{{ (d.balance > 0 ? 'voice.answer.owes' : 'voice.answer.noDues') | translate }}</div>
+    </button>
+  }
+
+  @case ('summary') {
+    <div class="grid">
+      <div class="stat"><div class="label">{{ 'voice.answer.sales' | translate }}</div><div class="val">{{ d.sales | inr }}</div></div>
+      <div class="stat"><div class="label">{{ 'voice.answer.bills' | translate }}</div><div class="val">{{ d.bills }}</div></div>
+      <div class="stat"><div class="label">{{ 'voice.answer.udhaarGiven' | translate }}</div><div class="val text-danger">{{ d.udhaarGiven | inr }}</div></div>
+      <div class="stat"><div class="label">{{ 'voice.answer.received' | translate }}</div><div class="val text-ok">{{ d.paymentsReceived | inr }}</div></div>
+    </div>
+  }
+
+  @case ('choose') {
+    <ul class="choose">
+      @for (c of d.choose; track c.id) {
+        <li>
+          <button type="button" (click)="open.emit(['/customers', c.id])">
+            <span class="name">{{ c.name }} @if (c.subtitle) {<small>{{ c.subtitle }}</small>}</span>
+            <span class="material-symbols-outlined chev" aria-hidden="true">chevron_right</span>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+}

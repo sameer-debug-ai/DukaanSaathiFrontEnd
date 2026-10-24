@@ -102,6 +102,23 @@
   line-height: 1.45;
   max-width: 460px;
 }
+.answer.compact {
+  font-size: 1.05rem;
+  max-width: none;
+}
+.answer-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+  > .material-symbols-outlined {
+    font-size: 32px;
+    margin-top: 2px;
+  }
+  .heard.small {
+    margin-bottom: 2px;
+  }
+}
 .big {
   font-size: 56px;
 }

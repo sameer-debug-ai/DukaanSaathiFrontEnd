@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { Router } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { VoiceParseResult } from '../../core/models/domain.models';
 import { apiErrorMessage } from '../../core/services/api.service';
@@ -12,6 +13,7 @@ import { LanguageService } from '../../core/services/language.service';
 import { SpeechService, type SpeechLang } from '../../core/services/speech.service';
 import { ToastService } from '../../core/services/toast.service';
 import { storage } from '../../core/utils/storage';
+import { VoiceAnswer } from './voice-answer';
 import { VoiceConfirm } from './voice-confirm';
 import { VoiceExecutor, type ConfirmedCommand } from './voice-executor.service';
 
@@ -35,7 +37,7 @@ const SPEAK_KEY = 'ds.voiceSpeak';
 /** The voice assistant sheet: listen -> parse -> confirm -> save (or answer a question). */
 @Component({
   selector: 'app-voice-panel',
-  imports: [FormsModule, MatDialogModule, MatButton, MatIconButton, MatProgressSpinner, TranslatePipe, VoiceConfirm],
+  imports: [FormsModule, MatDialogModule, MatButton, MatIconButton, MatProgressSpinner, TranslatePipe, VoiceAnswer, VoiceConfirm],
   templateUrl: './voice-panel.html',
   styleUrl: './voice-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,6 +52,7 @@ export class VoicePanel implements OnInit, OnDestroy {
   private readonly events = inject(AppEvents);
   private readonly alerts = inject(StockAlertsService);
   private readonly t = inject(TranslateService);
+  private readonly router = inject(Router);
   protected readonly speech = inject(SpeechService);
 
   protected readonly stage = signal<Stage>('idle');
@@ -174,6 +177,11 @@ export class VoicePanel implements OnInit, OnDestroy {
 
   protected close(): void {
     this.ref.close();
+  }
+
+  protected openRoute(route: string[]): void {
+    this.ref.close();
+    void this.router.navigate(route);
   }
 
   private reset(): void {

@@ -26,6 +26,10 @@ type RecognitionCtor = new () => SpeechRecognitionLike;
 
 export type SpeechLang = 'hi-IN' | 'en-IN';
 
+/** How long to wait for the first word, and for more words after a pause. */
+const START_TIMEOUT_MS = 8000;
+const SILENCE_MS = 1800;
+
 /**
  * Wraps browser speech recognition + synthesis. Recognition runs on-device /
  * in the browser; only the final text is sent to our server.
@@ -40,6 +44,20 @@ export class SpeechService {
       : undefined;
   private recognition: SpeechRecognitionLike | null = null;
   private onFinal: ((text: string) => void) | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Stops `rec` after `ms` without new speech. */
+  private armTimer(rec: SpeechRecognitionLike, ms: number): void {
+    this.clearTimer();
+    this.timer = setTimeout(() => {
+      if (this.recognition === rec) rec.stop();
+    }, ms);
+  }
+
+  private clearTimer(): void {
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+  }
 
   readonly supported = !!this.ctor;
   readonly canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window;
@@ -62,25 +80,30 @@ export class SpeechService {
 
     const rec = new this.ctor();
     rec.lang = lang;
-    rec.continuous = false;
+    // Non-continuous mode ends at the first short pause ("शर्मा ... जी के 500"), so keep
+    // listening and stop ourselves once the speaker has been quiet for a moment.
+    rec.continuous = true;
     rec.interimResults = true;
     rec.maxAlternatives = 1;
+    this.armTimer(rec, START_TIMEOUT_MS);
     rec.onstart = () => this.zone.run(() => this.listening.set(true));
     rec.onresult = (e) =>
       this.zone.run(() => {
-        let finalText = this.transcript();
+        let finalText = '';
         let interim = '';
-        for (let i = e.resultIndex; i < e.results.length; i++) {
+        for (let i = 0; i < e.results.length; i++) {
           const r = e.results[i]!;
-          if (r.isFinal) finalText += r[0].transcript;
-          else interim += r[0].transcript;
+          if (r.isFinal) finalText += ' ' + r[0].transcript;
+          else interim += ' ' + r[0].transcript;
         }
-        this.transcript.set(finalText.trim());
-        this.interim.set(interim);
+        this.transcript.set(finalText.replace(/\s+/g, ' ').trim());
+        this.interim.set(interim.trim());
+        this.armTimer(rec, SILENCE_MS);
       });
     rec.onerror = (e) => this.zone.run(() => this.error.set(e.error));
     rec.onend = () =>
       this.zone.run(() => {
+        this.clearTimer();
         this.listening.set(false);
         const text = (this.transcript() || this.interim()).trim();
         this.interim.set('');
@@ -96,10 +119,12 @@ export class SpeechService {
   }
 
   stop(): void {
+    this.clearTimer();
     this.recognition?.stop();
   }
 
   cancel(): void {
+    this.clearTimer();
     this.onFinal = null;
     this.recognition?.abort();
     this.listening.set(false);

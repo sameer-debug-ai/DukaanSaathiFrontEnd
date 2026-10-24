@@ -287,10 +287,27 @@ export interface VoiceParseResult {
   paymentMode: 'cash' | 'upi' | 'udhaar' | 'bank' | null;
   date: string | null;
   answer?: string;
-  answerData?: unknown;
+  answerData?: VoiceAnswerData;
   needsConfirmation: boolean;
   missing: string[];
 }
+
+export interface VoiceStockRow {
+  id: string;
+  name: string;
+  stock: number;
+  unit: string;
+  status: StockStatus;
+  lowStockThreshold: number;
+}
+
+/** Structured answer to a voice question, shown as a list/card instead of a sentence. */
+export type VoiceAnswerData =
+  | { kind: 'stock_list'; onlyOut: boolean; outCount: number; lowCount: number; items: VoiceStockRow[] }
+  | { kind: 'stock_item'; productId: string; name: string; stock: number; unit: string; status: StockStatus; lowStockThreshold: number }
+  | { kind: 'balance'; customerId: string; name: string; balance: number }
+  | { kind: 'summary'; period: string; from: string; to: string; sales: number; bills: number; udhaarGiven: number; paymentsReceived: number }
+  | { kind: 'choose'; choose: Candidate[] };
 
 export interface VoiceLog {
   id: string;

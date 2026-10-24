@@ -517,6 +517,15 @@
     "title": "More"
   },
   "voice": {
+    "answer": {
+      "openAlerts": "See all in stock alerts",
+      "owes": "Udhaar pending",
+      "noDues": "No pending udhaar",
+      "sales": "Sales",
+      "bills": "Bills",
+      "udhaarGiven": "Udhaar given",
+      "received": "Payments received"
+    },
     "mic": "Voice command",
     "title": "Voice assistant",
     "recognitionLang": "Recognition language",

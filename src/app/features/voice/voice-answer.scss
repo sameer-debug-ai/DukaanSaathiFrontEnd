@@ -1,0 +1,237 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* ---------- Stock list ---------- */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  .material-symbols-outlined {
+    font-size: 28px;
+  }
+  .num {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .label {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  &.danger {
+    background: var(--ds-danger-soft);
+    color: var(--ds-danger);
+  }
+  &.warn {
+    background: var(--ds-warn-soft);
+    color: var(--ds-warn);
+  }
+}
+
+.lists {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.group {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  padding: 4px 0;
+  background: var(--ds-card);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  &.danger {
+    color: var(--ds-danger);
+  }
+  &.warn {
+    color: var(--ds-warn);
+  }
+  .count {
+    padding: 0 8px;
+    border-radius: 999px;
+    background: currentColor;
+    color: var(--ds-card);
+    font-size: 0.75rem;
+    line-height: 1.6;
+  }
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--ds-line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+li + li {
+  border-top: 1px solid var(--ds-line);
+}
+li button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 10px 8px 14px;
+  border: 0;
+  background: var(--ds-card);
+  text-align: left;
+  &:hover,
+  &:focus-visible {
+    background: var(--ds-surface);
+  }
+}
+.name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  small {
+    display: block;
+    font-weight: 400;
+    font-size: 0.8rem;
+    color: var(--ds-muted);
+  }
+}
+.qty {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--ds-danger);
+  font-variant-numeric: tabular-nums;
+  &.warn {
+    color: var(--ds-warn);
+  }
+}
+.chev {
+  color: var(--ds-muted);
+  font-size: 20px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  text-align: center;
+  .material-symbols-outlined {
+    font-size: 44px;
+  }
+  p {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+.link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--ds-brand);
+  font-weight: 600;
+  .material-symbols-outlined {
+    font-size: 18px;
+  }
+}
+
+/* ---------- Single card (one product / one customer) ---------- */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid var(--ds-line);
+  border-radius: 14px;
+  background: var(--ds-card);
+  text-align: left;
+  &:hover,
+  &:focus-visible {
+    background: var(--ds-surface);
+  }
+}
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.card-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.big-num {
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  span {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--ds-muted);
+  }
+}
+.sub {
+  font-size: 0.85rem;
+  color: var(--ds-muted);
+}
+
+/* ---------- Summary ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.stat {
+  padding: 12px 14px;
+  border: 1px solid var(--ds-line);
+  border-radius: 12px;
+  .label {
+    font-size: 0.8rem;
+    color: var(--ds-muted);
+  }
+  .val {
+    margin-top: 2px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.choose {
+  max-height: 46vh;
+  overflow-y: auto;
+}
