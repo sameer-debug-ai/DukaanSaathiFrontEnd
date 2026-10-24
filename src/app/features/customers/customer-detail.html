@@ -1,0 +1,114 @@
+<section class="ds-page">
+  @if (customer(); as c) {
+    <app-page-header [title]="c.name" [subtitle]="c.aliases.join(', ')" backLink="/customers">
+      <button mat-icon-button [matMenuTriggerFor]="menu" [attr.aria-label]="'common.more' | translate">
+        <span class="material-symbols-outlined">more_vert</span>
+      </button>
+      <mat-menu #menu="matMenu" xPosition="before">
+        <button mat-menu-item (click)="edit()"><span class="material-symbols-outlined mr-3 align-middle">edit</span>{{ 'common.edit' | translate }}</button>
+        <button mat-menu-item (click)="statement()" [disabled]="pdfBusy()"><span class="material-symbols-outlined mr-3 align-middle">picture_as_pdf</span>{{ 'customers.statement' | translate }}</button>
+        <button mat-menu-item (click)="remove()"><span class="material-symbols-outlined mr-3 align-middle">delete</span>{{ 'common.delete' | translate }}</button>
+      </mat-menu>
+    </app-page-header>
+
+    <div class="hero ds-card" [class.due]="c.currentBalance > 0">
+      <div class="hero-main">
+        <div class="label">{{ (c.currentBalance >= 0 ? 'customers.balanceDue' : 'customers.advanceHeld') | translate }}</div>
+        <div class="value">{{ (c.currentBalance < 0 ? -c.currentBalance : c.currentBalance) | inr }}</div>
+        <div class="meta">
+          {{ 'customers.totalCredit' | translate }} {{ c.stats.totalCredit | inr }} · {{ 'customers.totalPaid' | translate }} {{ c.stats.totalPaid | inr }}
+          @if (c.creditLimit) {
+            · {{ 'customers.limit' | translate }} {{ c.creditLimit | inr }}
+          }
+        </div>
+        @if (c.phone || c.address) {
+          <div class="meta">
+            @if (c.phone) {
+              <a [href]="'tel:' + c.phone" class="phone"><span class="material-symbols-outlined">call</span>{{ c.phone }}</a>
+            }
+            {{ c.address }}
+          </div>
+        }
+      </div>
+      <div class="actions">
+        <button mat-flat-button class="ds-big-btn btn-credit" (click)="entry('credit')">
+          <span class="material-symbols-outlined">add</span>{{ 'ledger.addCredit' | translate }}
+        </button>
+        <button mat-flat-button class="ds-big-btn btn-payment" (click)="entry('payment')">
+          <span class="material-symbols-outlined">payments</span>{{ 'ledger.receive' | translate }}
+        </button>
+        <a mat-stroked-button class="ds-big-btn" [href]="remindUrl()" target="_blank" rel="noopener" [class.disabled]="c.currentBalance <= 0">
+          <span class="material-symbols-outlined">chat</span>{{ 'customers.remind' | translate }}
+        </a>
+        <button mat-stroked-button class="ds-big-btn" (click)="statement()" [disabled]="pdfBusy()">
+          <span class="material-symbols-outlined">picture_as_pdf</span>{{ 'customers.statementShort' | translate }}
+        </button>
+      </div>
+      @if (!c.phone && c.currentBalance > 0) {
+        <p class="hint">{{ 'customers.noPhoneHint' | translate }}</p>
+      }
+    </div>
+
+    <div class="ds-card overflow-hidden mt-4">
+      <div class="ds-section-title">
+        <h2>{{ 'ledger.title' | translate }}</h2>
+        <span class="text-sm text-muted">{{ 'ledger.entries' | translate: { count: entries().length } }}</span>
+      </div>
+      @if (!ledger()) {
+        <div class="p-4"><app-skeleton [rows]="5" /></div>
+      } @else if (!entries().length) {
+        <app-empty-state icon="menu_book" [title]="'ledger.emptyTitle' | translate" [hint]="'ledger.emptyHint' | translate" />
+      } @else {
+        <table class="ds-table hidden md:table">
+          <thead>
+            <tr>
+              <th>{{ 'common.date' | translate }}</th>
+              <th>{{ 'common.description' | translate }}</th>
+              <th class="num">{{ 'ledger.credit' | translate }}</th>
+              <th class="num">{{ 'ledger.payment' | translate }}</th>
+              <th class="num">{{ 'stock.balance' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of entries(); track e.id) {
+              <tr>
+                <td class="whitespace-nowrap">{{ e.date | istDate }}</td>
+                <td>
+                  {{ describe(e) }}
+                  @if (e.source !== 'manual') {
+                    <span class="ds-badge muted ml-1">{{ ('ledger.source.' + e.source) | translate }}</span>
+                  }
+                  @if (e.saleId) {
+                    <a class="ml-1 text-brand text-sm" [routerLink]="['/sales', e.saleId]">{{ 'ledger.viewBill' | translate }}</a>
+                  }
+                </td>
+                <td class="num amount-credit">{{ e.credit ? (e.credit | inr) : '' }}</td>
+                <td class="num amount-payment">{{ e.payment ? (e.payment | inr) : '' }}</td>
+                <td class="num font-semibold">{{ e.balance | inr }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <div class="ds-list md:hidden">
+          @for (e of entries(); track e.id) {
+            <div class="ds-list-item">
+              <span class="ds-badge" [class]="'ds-badge ' + (e.type === 'credit' ? 'danger' : 'ok')">
+                <span class="material-symbols-outlined">{{ e.type === 'credit' ? 'call_made' : 'call_received' }}</span>
+              </span>
+              <div class="flex-1 min-w-0">
+                <div class="title">{{ describe(e) }}</div>
+                <div class="sub">{{ e.date | istDate }} · {{ 'stock.balance' | translate }} {{ e.balance | inr }}</div>
+              </div>
+              <strong class="tabular" [class.amount-credit]="e.type === 'credit'" [class.amount-payment]="e.type === 'payment'">
+                {{ e.type === 'credit' ? '+' : '-' }}{{ e.amount | inr }}
+              </strong>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <app-skeleton [rows]="3" [height]="120" />
+  }
+</section>

@@ -1,0 +1,24 @@
+{
+  "name": "DukaanSathi - Smart Shop Manager",
+  "short_name": "DukaanSathi",
+  "description": "Stock, udhaar khata, billing and voice commands for kirana stores",
+  "id": "/",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6f9",
+  "theme_color": "#1e5fa8",
+  "lang": "en-IN",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "New bill", "url": "/sales/new", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Udhaar khata", "url": "/customers", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

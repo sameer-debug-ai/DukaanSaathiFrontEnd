@@ -1,0 +1,76 @@
+.hero {
+  padding: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+  justify-content: space-between;
+  border-left: 6px solid var(--ds-ok);
+  &.due {
+    border-left-color: var(--ds-danger);
+  }
+}
+.hero-main {
+  min-width: 220px;
+  flex: 1;
+}
+.label {
+  color: var(--ds-muted);
+  font-size: 0.9rem;
+}
+.value {
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1.15;
+  margin: 2px 0 6px;
+}
+.due .value {
+  color: var(--ds-danger);
+}
+.meta {
+  color: var(--ds-muted);
+  font-size: 0.88rem;
+  margin-top: 4px;
+}
+.phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ds-brand);
+  text-decoration: none;
+  margin-right: 8px;
+  min-height: 32px;
+  .material-symbols-outlined {
+    font-size: 18px;
+  }
+}
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  max-width: 460px;
+}
+@media (max-width: 599.98px) {
+  .actions {
+    max-width: none;
+  }
+}
+.btn-credit {
+  --mdc-filled-button-container-color: var(--ds-danger);
+  --mat-button-filled-container-color: var(--ds-danger);
+}
+.btn-payment {
+  --mdc-filled-button-container-color: var(--ds-ok);
+  --mat-button-filled-container-color: var(--ds-ok);
+}
+.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+.hint {
+  width: 100%;
+  margin: 0;
+  color: var(--ds-warn);
+  font-size: 0.85rem;
+}

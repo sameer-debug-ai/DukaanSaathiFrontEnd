@@ -1,0 +1,114 @@
+<section class="ds-page">
+  <app-page-header [title]="'nav.products' | translate" [subtitle]="'products.count' | translate: { count: total() }">
+    <button mat-icon-button [matMenuTriggerFor]="more" [attr.aria-label]="'common.more' | translate">
+      <span class="material-symbols-outlined">more_vert</span>
+    </button>
+    <mat-menu #more="matMenu" xPosition="before">
+      <button mat-menu-item (click)="openImport()"><span class="material-symbols-outlined mr-3 align-middle">upload</span>{{ 'products.import' | translate }}</button>
+      <button mat-menu-item (click)="exportCsv()"><span class="material-symbols-outlined mr-3 align-middle">download</span>{{ 'products.export' | translate }}</button>
+      <a mat-menu-item routerLink="/products/alerts"><span class="material-symbols-outlined mr-3 align-middle">warning</span>{{ 'nav.lowStock' | translate }}</a>
+    </mat-menu>
+    <button mat-flat-button (click)="openForm()">
+      <span class="material-symbols-outlined">add</span>
+      <span class="hidden sm:inline">{{ 'products.add' | translate }}</span>
+    </button>
+  </app-page-header>
+
+  <div class="ds-toolbar">
+    <app-search-box [placeholder]="'products.searchPlaceholder' | translate" [value]="search()" (search)="onSearch($event)" />
+    <mat-select class="ds-select" [value]="categoryFilter()" (valueChange)="setCategory($event)" [attr.aria-label]="'products.category' | translate">
+      <mat-option value="">{{ 'products.allCategories' | translate }}</mat-option>
+      @for (c of categories(); track c) {
+        <mat-option [value]="c">{{ c }}</mat-option>
+      }
+    </mat-select>
+    <mat-select class="ds-select" [value]="sort()" (valueChange)="setSort($event)" [attr.aria-label]="'common.sort' | translate">
+      @for (s of sorts; track s.id) {
+        <mat-option [value]="s.id">{{ s.key | translate }}</mat-option>
+      }
+    </mat-select>
+  </div>
+  <div class="ds-chips mb-4" role="group" [attr.aria-label]="'products.stockFilter' | translate">
+    @for (c of stockChips; track c.id) {
+      <button class="ds-chip" [class.active]="stockFilter() === c.id" (click)="setStock(c.id)">{{ c.key | translate }}</button>
+    }
+  </div>
+
+  <div class="ds-card overflow-hidden">
+    @if (loading()) {
+      <div class="p-4"><app-skeleton [rows]="6" /></div>
+    } @else if (!items().length) {
+      <app-empty-state icon="inventory_2" [title]="'products.emptyTitle' | translate" [hint]="'products.emptyHint' | translate">
+        <button mat-flat-button (click)="openForm()">{{ 'products.add' | translate }}</button>
+      </app-empty-state>
+    } @else {
+      <!-- Desktop table -->
+      <table class="ds-table hidden md:table">
+        <thead>
+          <tr>
+            <th>{{ 'products.name' | translate }}</th>
+            <th>{{ 'products.category' | translate }}</th>
+            <th class="num">{{ 'products.sellingPrice' | translate }}</th>
+            <th class="num">{{ 'products.purchasePrice' | translate }}</th>
+            <th class="num">{{ 'stock.title' | translate }}</th>
+            <th>{{ 'common.status' | translate }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of items(); track p.id) {
+            <tr class="clickable" (click)="open(p)">
+              <td>
+                <div class="font-semibold">{{ p.name }}</div>
+                @if (altNames(p); as alt) {
+                  <div class="text-sm text-muted">{{ alt }}</div>
+                }
+              </td>
+              <td>{{ p.category }}</td>
+              <td class="num">{{ p.sellingPrice | inr }}<span class="text-muted text-sm">/{{ p.unit }}</span></td>
+              <td class="num">{{ p.purchasePrice | inr }}</td>
+              <td class="num font-semibold">{{ p.currentStock }} {{ p.unit }}</td>
+              <td><app-stock-badge [status]="p.stockStatus" /></td>
+              <td class="num">
+                <button mat-icon-button (click)="adjust(p, $event)" [matTooltip]="'stock.adjust' | translate" [attr.aria-label]="'stock.adjust' | translate">
+                  <span class="material-symbols-outlined">swap_vert</span>
+                </button>
+                <button mat-icon-button (click)="$event.stopPropagation(); openForm(p)" [matTooltip]="'common.edit' | translate" [attr.aria-label]="'common.edit' | translate">
+                  <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button mat-icon-button (click)="remove(p, $event)" [matTooltip]="'common.delete' | translate" [attr.aria-label]="'common.delete' | translate">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Mobile cards -->
+      <div class="ds-list md:hidden">
+        @for (p of items(); track p.id) {
+          <div class="ds-list-item" (click)="open(p)" role="button" tabindex="0" (keydown.enter)="open(p)">
+            <div class="flex-1 min-w-0">
+              <div class="title">{{ p.name }}</div>
+              <div class="sub">{{ p.sellingPrice | inr }}/{{ p.unit }} · {{ p.category }}</div>
+              <div class="mt-1 flex items-center gap-2">
+                <app-stock-badge [status]="p.stockStatus" />
+                <span class="text-sm font-semibold">{{ p.currentStock }} {{ p.unit }}</span>
+              </div>
+            </div>
+            <button mat-icon-button (click)="adjust(p, $event)" [attr.aria-label]="'stock.adjust' | translate">
+              <span class="material-symbols-outlined">swap_vert</span>
+            </button>
+          </div>
+        }
+      </div>
+
+      @if (hasMore()) {
+        <div class="p-3 text-center border-t border-line">
+          <button mat-button (click)="loadMore()">{{ 'common.loadMore' | translate }}</button>
+        </div>
+      }
+    }
+  </div>
+</section>

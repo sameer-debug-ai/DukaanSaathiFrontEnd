@@ -1,0 +1,21 @@
+/* Tailwind lives in its own CSS file so Sass never tries to resolve it. */
+@import 'tailwindcss';
+
+/* Dark mode is driven by the `.dark` class on <html> (ThemeService). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Noto Sans', 'Noto Sans Devanagari', system-ui, sans-serif;
+  --color-ok: var(--ds-ok);
+  --color-ok-soft: var(--ds-ok-soft);
+  --color-danger: var(--ds-danger);
+  --color-danger-soft: var(--ds-danger-soft);
+  --color-warn: var(--ds-warn);
+  --color-warn-soft: var(--ds-warn-soft);
+  --color-surface: var(--ds-surface);
+  --color-card: var(--ds-card);
+  --color-muted: var(--ds-muted);
+  --color-line: var(--ds-line);
+  --color-brand: var(--ds-brand);
+  --color-brand-soft: var(--ds-brand-soft);
+}

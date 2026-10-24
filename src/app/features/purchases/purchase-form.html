@@ -1,0 +1,133 @@
+<section class="ds-page max-w-4xl">
+  <app-page-header [title]="'suppliers.newPurchase' | translate" [subtitle]="'purchases.formHint' | translate" backLink="/purchases" />
+
+  <div class="ds-card p-4 mb-4">
+    <div class="flex gap-2 items-start">
+      <mat-form-field appearance="outline" class="flex-1">
+        <mat-label>{{ 'purchases.supplier' | translate }}</mat-label>
+        <mat-select [value]="supplier()" (valueChange)="supplier.set($event)">
+          @for (s of suppliers(); track s.id) {
+            <mat-option [value]="s.id">{{ s.name }}{{ s.company ? ' · ' + s.company : '' }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <button mat-stroked-button class="h-14" type="button" (click)="addSupplier()">
+        <span class="material-symbols-outlined">add</span><span class="hidden sm:inline">{{ 'suppliers.add' | translate }}</span>
+      </button>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'purchases.invoice' | translate }}</mat-label>
+        <input matInput [ngModel]="invoice()" (ngModelChange)="invoice.set($event)" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'common.date' | translate }}</mat-label>
+        <input matInput type="date" [max]="today" [ngModel]="date()" (ngModelChange)="date.set($event)" />
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="ds-card overflow-hidden mb-4">
+    <div class="ds-section-title"><h2>{{ 'purchases.itemsTitle' | translate }}</h2></div>
+    <div class="rows">
+      @for (row of rows(); track row.key; let i = $index) {
+        <div class="row">
+          <div class="row-head">
+            <span class="num-badge">{{ i + 1 }}</span>
+            <mat-form-field appearance="outline" class="flex-1 no-sub">
+              <mat-label>{{ 'purchases.product' | translate }}</mat-label>
+              <input matInput [ngModel]="row.query" (ngModelChange)="typed(row, $event)" [matAutocomplete]="auto" />
+              <mat-autocomplete #auto="matAutocomplete" (optionSelected)="pick(row, $event.option.value)" [displayWith]="display">
+                @for (p of filtered(row.query); track p.id) {
+                  <mat-option [value]="p">{{ p.name }} <small class="text-muted">· {{ p.currentStock }} {{ p.unit }}</small></mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+            <button mat-icon-button type="button" (click)="removeRow(row)" [attr.aria-label]="'common.remove' | translate">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+
+          @if (row.query && !row.product && !row.isNew) {
+            <button mat-button type="button" class="self-start" (click)="markNew(row)">
+              <span class="material-symbols-outlined">add_circle</span>{{ 'purchases.createProduct' | translate: { name: row.query } }}
+            </button>
+          }
+          @if (row.isNew) {
+            <div class="new-product">
+              <span class="ds-badge info">{{ 'purchases.newProduct' | translate }}</span>
+              <mat-form-field appearance="outline" class="no-sub">
+                <mat-label>{{ 'products.unit' | translate }}</mat-label>
+                <mat-select [value]="row.newUnit" (valueChange)="patch(row, { newUnit: $event })">
+                  @for (u of units; track u) {
+                    <mat-option [value]="u">{{ ('units.' + u) | translate }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="no-sub">
+                <mat-label>{{ 'products.sellingPrice' | translate }}</mat-label>
+                <span matTextPrefix>₹&nbsp;</span>
+                <input matInput type="number" inputmode="decimal" [ngModel]="row.newSellingPrice" (ngModelChange)="patch(row, { newSellingPrice: $event })" />
+              </mat-form-field>
+            </div>
+          }
+
+          <div class="row-nums">
+            <mat-form-field appearance="outline" class="no-sub">
+              <mat-label>{{ 'common.qty' | translate }}{{ row.product ? ' (' + row.product.unit + ')' : '' }}</mat-label>
+              <input matInput type="number" inputmode="decimal" min="0" [ngModel]="row.qty" (ngModelChange)="patch(row, { qty: $event })" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="no-sub">
+              <mat-label>{{ 'purchases.rate' | translate }}</mat-label>
+              <span matTextPrefix>₹&nbsp;</span>
+              <input matInput type="number" inputmode="decimal" min="0" [ngModel]="row.rate" (ngModelChange)="patch(row, { rate: $event })" />
+            </mat-form-field>
+            <div class="line-total">
+              <span class="text-xs text-muted">{{ 'common.total' | translate }}</span>
+              <strong>{{ lineTotal(row) | inr }}</strong>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+    <div class="p-3 border-t border-line">
+      <button mat-stroked-button type="button" (click)="addRow()"><span class="material-symbols-outlined">add</span>{{ 'purchases.addRow' | translate }}</button>
+    </div>
+  </div>
+
+  <div class="ds-card p-4 mb-24 sm:mb-4">
+    <div class="totals">
+      <div><span>{{ 'purchases.total' | translate }}</span><strong class="text-xl">{{ total() | inr }}</strong></div>
+    </div>
+    <div class="flex gap-2 items-start mt-3">
+      <mat-form-field appearance="outline" class="flex-1">
+        <mat-label>{{ 'purchases.paidNow' | translate }}</mat-label>
+        <span matTextPrefix>₹&nbsp;</span>
+        <input matInput type="number" inputmode="decimal" min="0" [ngModel]="paid()" (ngModelChange)="paid.set($event)" />
+      </mat-form-field>
+      <button mat-stroked-button type="button" class="h-14" (click)="payFull()">{{ 'ledger.fullAmount' | translate }}</button>
+    </div>
+    @if (paidPaise() > 0) {
+      <mat-button-toggle-group [value]="mode()" (change)="mode.set($event.value)" class="mb-3">
+        <mat-button-toggle value="cash">{{ 'pay.cash' | translate }}</mat-button-toggle>
+        <mat-button-toggle value="upi">{{ 'pay.upi' | translate }}</mat-button-toggle>
+        <mat-button-toggle value="bank">{{ 'pay.bank' | translate }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    }
+    <div class="totals">
+      <div><span>{{ 'purchases.due' | translate }}</span><strong class="text-warn text-xl">{{ due() | inr }}</strong></div>
+    </div>
+    <mat-form-field appearance="outline" class="mt-3">
+      <mat-label>{{ 'common.note' | translate }}</mat-label>
+      <input matInput [ngModel]="note()" (ngModelChange)="note.set($event)" />
+    </mat-form-field>
+    <mat-checkbox [checked]="updatePrice()" (change)="updatePrice.set($event.checked)">{{ 'purchases.updatePrice' | translate }}</mat-checkbox>
+  </div>
+
+  <div class="save-bar">
+    <div class="hidden sm:block text-muted">{{ 'purchases.total' | translate }} <strong class="text-inherit">{{ total() | inr }}</strong></div>
+    <button mat-flat-button class="ds-big-btn save" (click)="save()" [disabled]="saving()">
+      <span class="material-symbols-outlined">save</span>{{ 'purchases.save' | translate }}
+    </button>
+  </div>
+</section>

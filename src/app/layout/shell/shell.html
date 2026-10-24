@@ -1,0 +1,98 @@
+<div class="shell" [class.mobile]="isMobile()" [class.collapsed]="collapsed() && !isMobile()">
+  @if (!isMobile()) {
+    <aside class="sidebar" [attr.aria-label]="'nav.menu' | translate">
+      <a routerLink="/dashboard" class="brand">
+        <span class="material-symbols-outlined icon-filled brand-icon">storefront</span>
+        @if (!collapsed()) {
+          <span class="brand-text">{{ 'app.name' | translate }}</span>
+        }
+      </a>
+      <nav class="side-nav">
+        @for (item of navItems; track item.path) {
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="active"
+            class="side-link"
+            [matTooltip]="collapsed() ? (item.labelKey | translate) : ''"
+            matTooltipPosition="right"
+          >
+            <span class="material-symbols-outlined">{{ item.icon }}</span>
+            @if (!collapsed()) {
+              <span>{{ item.labelKey | translate }}</span>
+            }
+          </a>
+        }
+      </nav>
+    </aside>
+  }
+
+  <div class="main">
+    <header class="topbar">
+      @if (!isMobile()) {
+        <button
+          mat-icon-button
+          (click)="toggleSidebar()"
+          [attr.aria-label]="(collapsed() ? 'nav.expand' : 'nav.collapse') | translate"
+        >
+          <span class="material-symbols-outlined">{{ collapsed() ? 'menu' : 'menu_open' }}</span>
+        </button>
+      } @else {
+        <span class="material-symbols-outlined icon-filled brand-icon">storefront</span>
+      }
+
+      <div class="shop">
+        <div class="shop-name">{{ auth.user()?.shopName }}</div>
+        @if (!isMobile()) {
+          <div class="shop-owner">{{ auth.user()?.name }}</div>
+        }
+      </div>
+
+      <a mat-icon-button routerLink="/products/alerts" class="bell" [attr.aria-label]="('nav.notifications' | translate) + ': ' + alerts.count()"
+        [matTooltip]="'nav.notifications' | translate">
+        <span class="material-symbols-outlined">notifications</span>
+        @if (alerts.count() > 0) {
+          <span class="badge" aria-hidden="true">{{ alerts.count() > 99 ? '99+' : alerts.count() }}</span>
+        }
+      </a>
+
+      <button mat-icon-button [matMenuTriggerFor]="accountMenu" [attr.aria-label]="'nav.account' | translate">
+        <span class="material-symbols-outlined">account_circle</span>
+      </button>
+      <mat-menu #accountMenu="matMenu" xPosition="before">
+        <div class="menu-head">
+          <strong>{{ auth.user()?.name }}</strong>
+          <small>{{ auth.user()?.phone }}</small>
+        </div>
+        <a mat-menu-item routerLink="/settings">
+          <span class="material-symbols-outlined menu-icon">settings</span>
+          <span>{{ 'nav.settings' | translate }}</span>
+        </a>
+        <button mat-menu-item (click)="theme.toggle()">
+          <span class="material-symbols-outlined menu-icon">{{ theme.dark() ? 'light_mode' : 'dark_mode' }}</span>
+          <span>{{ (theme.dark() ? 'common.lightMode' : 'common.darkMode') | translate }}</span>
+        </button>
+        <button mat-menu-item (click)="auth.logout()">
+          <span class="material-symbols-outlined menu-icon">logout</span>
+          <span>{{ 'nav.logout' | translate }}</span>
+        </button>
+      </mat-menu>
+    </header>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+
+  @if (isMobile()) {
+    <nav class="bottom-nav" [attr.aria-label]="'nav.menu' | translate">
+      @for (item of bottomItems; track item.path) {
+        <a [routerLink]="item.path" routerLinkActive="active" class="bottom-link">
+          <span class="material-symbols-outlined">{{ item.icon }}</span>
+          <span class="bottom-label">{{ item.labelKey | translate }}</span>
+        </a>
+      }
+    </nav>
+  }
+
+  <app-mic-fab [raised]="isMobile()" />
+</div>

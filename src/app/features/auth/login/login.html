@@ -1,0 +1,70 @@
+<div class="wrap">
+
+  <div class="hero">
+    <div class="logo"><span class="material-symbols-outlined icon-filled">storefront</span></div>
+    <h1>{{ 'app.name' | translate }}</h1>
+    <p>{{ 'app.tagline' | translate }}</p>
+  </div>
+
+  <div class="ds-card card">
+    <h2>{{ 'auth.loginTitle' | translate }}</h2>
+
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'auth.phone' | translate }}</mat-label>
+        <span matTextPrefix>+91&nbsp;</span>
+        <input matInput formControlName="phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="14" />
+        @if (form.controls.phone.hasError('phone')) {
+          <mat-error>{{ 'auth.phoneInvalid' | translate }}</mat-error>
+        } @else if (form.controls.phone.hasError('required')) {
+          <mat-error>{{ 'common.required' | translate }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'auth.password' | translate }}</mat-label>
+        <input
+          matInput
+          formControlName="password"
+          [type]="showPassword() ? 'text' : 'password'"
+          autocomplete="current-password"
+        />
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          (click)="showPassword.set(!showPassword())"
+          [attr.aria-label]="(showPassword() ? 'auth.hidePassword' : 'auth.showPassword') | translate"
+        >
+          <span class="material-symbols-outlined">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+        </button>
+        @if (form.controls.password.hasError('required')) {
+          <mat-error>{{ 'common.required' | translate }}</mat-error>
+        }
+      </mat-form-field>
+
+      <button mat-flat-button class="submit" type="submit" [disabled]="loading()">
+        @if (loading()) {
+          <mat-progress-spinner mode="indeterminate" diameter="22" />
+        } @else {
+          {{ 'auth.login' | translate }}
+        }
+      </button>
+    </form>
+
+    @if (showDemo) {
+      <button type="button" class="demo" (click)="fillDemo()">
+        {{ 'auth.demoHint' | translate: demo }}
+      </button>
+    }
+  </div>
+
+  <p class="switch">
+    {{ 'auth.noAccount' | translate }}
+    <a routerLink="/register">{{ 'auth.createAccount' | translate }}</a>
+  </p>
+</div>

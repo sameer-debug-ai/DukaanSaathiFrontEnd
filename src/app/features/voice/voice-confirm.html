@@ -1,0 +1,205 @@
+<div class="card">
+  <div class="intent">
+    <span class="ds-badge info">{{ ('voice.intent.' + intent()) | translate }}</span>
+    @if (result().confidence < 0.6) {
+      <span class="ds-badge warn"><span class="material-symbols-outlined">help</span>{{ 'voice.lowConfidence' | translate }}</span>
+    }
+  </div>
+
+  <p class="question">{{ summary() }}</p>
+  @if (date()) {
+    <p class="when"><span class="material-symbols-outlined">event</span>{{ dateLabel() }}</p>
+  }
+
+  <!-- Customer -->
+  @if (showCustomer()) {
+    <div class="block">
+      <div class="block-title">{{ 'billing.customer' | translate }}</div>
+      @if (customer().id) {
+        <div class="picked">
+          <span class="material-symbols-outlined text-ok">check_circle</span>
+          <strong>{{ customer().name }}</strong>
+          <button mat-button (click)="clearPick('customer')">{{ 'voice.change' | translate }}</button>
+        </div>
+      } @else {
+        @if (customer().match?.candidates?.length) {
+          <p class="hint">{{ 'voice.whichCustomer' | translate: { name: result().parsed.customerName } }}</p>
+          <div class="cands">
+            @for (c of customer().match!.candidates; track c.id) {
+              <button type="button" class="cand" (click)="choose('customer', c)">
+                <strong>{{ c.name }}</strong>
+                @if (c.subtitle) {<small>{{ c.subtitle }}</small>}
+              </button>
+            }
+          </div>
+        } @else {
+          <p class="hint warn">{{ 'voice.customerNotFound' | translate: { name: result().parsed.customerName ?? '' } }}</p>
+        }
+        <button mat-stroked-button (click)="createCustomer()"><span class="material-symbols-outlined">person_add</span>{{ 'voice.createCustomer' | translate: { name: result().parsed.customerName ?? '' } }}</button>
+      }
+    </div>
+  }
+
+  <!-- Supplier -->
+  @if (needsSupplier()) {
+    <div class="block">
+      <div class="block-title">{{ 'purchases.supplier' | translate }}</div>
+      @if (supplier().id) {
+        <div class="picked">
+          <span class="material-symbols-outlined text-ok">check_circle</span>
+          <strong>{{ supplier().name }}</strong>
+          <button mat-button (click)="clearPick('supplier')">{{ 'voice.change' | translate }}</button>
+        </div>
+      } @else {
+        @if (supplier().match?.candidates?.length) {
+          <p class="hint">{{ 'voice.whichSupplier' | translate }}</p>
+          <div class="cands">
+            @for (c of supplier().match!.candidates; track c.id) {
+              <button type="button" class="cand" (click)="choose('supplier', c)"><strong>{{ c.name }}</strong>@if (c.subtitle) {<small>{{ c.subtitle }}</small>}</button>
+            }
+          </div>
+        } @else {
+          <p class="hint warn">{{ 'voice.supplierNotFound' | translate: { name: result().parsed.supplierName ?? '' } }}</p>
+        }
+        <button mat-stroked-button (click)="createSupplier()"><span class="material-symbols-outlined">add_business</span>{{ 'voice.createSupplier' | translate }}</button>
+      }
+    </div>
+  }
+
+  <!-- Single product (stock adjust / query) -->
+  @if (intent() === 'adjust_stock') {
+    <div class="block">
+      <div class="block-title">{{ 'purchases.product' | translate }}</div>
+      @if (product().id) {
+        <div class="picked">
+          <span class="material-symbols-outlined text-ok">check_circle</span>
+          <strong>{{ product().name }}</strong>
+          <button mat-button (click)="clearPick('product')">{{ 'voice.change' | translate }}</button>
+        </div>
+      } @else if (product().match?.candidates?.length) {
+        <div class="cands">
+          @for (c of product().match!.candidates; track c.id) {
+            <button type="button" class="cand" (click)="choose('product', c)"><strong>{{ c.name }}</strong><small>{{ c.subtitle }}</small></button>
+          }
+        </div>
+      } @else {
+        <p class="hint warn">{{ 'voice.productNotFound' | translate: { name: result().parsed.productName ?? '' } }}</p>
+      }
+      <div class="fields">
+        <label>
+          <span>{{ 'stock.quantity' | translate }} (+ / −)</span>
+          <input type="number" inputmode="decimal" [ngModel]="quantity()" (ngModelChange)="quantity.set($event)" />
+        </label>
+      </div>
+    </div>
+  }
+
+  <!-- New product -->
+  @if (intent() === 'add_product') {
+    <div class="block">
+      @if (result().product?.best; as similar) {
+        <p class="hint warn">{{ 'voice.similarProduct' | translate: { name: similar.name } }}</p>
+      }
+      <div class="fields">
+        <label class="wide"><span>{{ 'products.name' | translate }}</span><input [ngModel]="productName()" (ngModelChange)="productName.set($event)" /></label>
+        <label><span>{{ 'products.sellingPrice' | translate }} (₹)</span><input type="number" inputmode="decimal" [ngModel]="sellingRs()" (ngModelChange)="sellingRs.set($event)" /></label>
+        <label>
+          <span>{{ 'products.unit' | translate }}</span>
+          <select [ngModel]="unit() ?? 'piece'" (ngModelChange)="unit.set($event)">
+            @for (u of units; track u) {
+              <option [value]="u">{{ ('units.' + u) | translate }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </div>
+  }
+
+  <!-- Items -->
+  @if (hasItems() && items().length) {
+    <div class="block">
+      <div class="block-title">{{ 'voice.items' | translate }}</div>
+      @for (it of items(); track it.key) {
+        <div class="item">
+          <div class="item-main">
+            @if (it.productId) {
+              <span class="material-symbols-outlined text-ok">check_circle</span>
+              <strong>{{ it.productName }}</strong>
+              @if (it.productName?.toLowerCase() !== it.name.toLowerCase()) {
+                <small class="text-muted">"{{ it.name }}"</small>
+              }
+            } @else {
+              <span class="material-symbols-outlined text-warn">help</span>
+              <strong>{{ it.name }}</strong>
+              <small class="text-warn">{{ (intent() === 'add_purchase' ? 'voice.willCreate' : 'voice.notInList') | translate }}</small>
+            }
+            <span class="flex-1"></span>
+            <strong class="tabular">{{ it.rate !== null ? (it.qty * it.rate | inr) : '—' }}</strong>
+            @if (editing()) {
+              <button mat-icon-button (click)="removeItem(it)" [attr.aria-label]="'common.remove' | translate"><span class="material-symbols-outlined">close</span></button>
+            }
+          </div>
+          @if (!it.productId && it.candidates.length) {
+            <div class="cands small">
+              @for (c of it.candidates; track c.id) {
+                <button type="button" class="cand" (click)="pickItem(it, c)">{{ c.name }}</button>
+              }
+            </div>
+          }
+          @if (editing()) {
+            <div class="fields">
+              <label><span>{{ 'common.qty' | translate }}</span><input type="number" inputmode="decimal" [ngModel]="it.qty" (ngModelChange)="setQty(it, $event)" /></label>
+              <label><span>{{ 'purchases.rate' | translate }} (₹)</span><input type="number" inputmode="decimal" [ngModel]="rupees(it.rate)" (ngModelChange)="setRate(it, $event)" /></label>
+            </div>
+          } @else {
+            <div class="text-sm text-muted">{{ it.qty }} {{ it.unit }} × {{ it.rate !== null ? (it.rate | inr) : '—' }}</div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Amounts & payment -->
+  @if (editing() && (hasAmount() || intent() === 'add_sale' || intent() === 'add_purchase')) {
+    <div class="block">
+      <div class="fields">
+        @if (hasAmount() && !(intent() === 'add_purchase' && itemsTotal() !== null) && !(intent() === 'add_credit' && allItemsMatched())) {
+          <label><span>{{ 'common.amount' | translate }} (₹)</span><input type="number" inputmode="decimal" [ngModel]="amountRs()" (ngModelChange)="amountRs.set($event)" /></label>
+        }
+        @if (intent() === 'add_purchase') {
+          <label><span>{{ 'purchases.paidNow' | translate }} (₹)</span><input type="number" inputmode="decimal" [ngModel]="paidRs()" (ngModelChange)="paidRs.set($event)" /></label>
+        }
+        <label><span>{{ 'common.date' | translate }}</span><input type="date" [ngModel]="date()" (ngModelChange)="date.set($event || null)" /></label>
+      </div>
+      @if (intent() === 'add_sale' || intent() === 'receive_payment' || intent() === 'supplier_payment') {
+        <mat-button-toggle-group [value]="mode()" (change)="mode.set($event.value)" class="modes mt-2">
+          <mat-button-toggle value="cash">{{ 'pay.cash' | translate }}</mat-button-toggle>
+          <mat-button-toggle value="upi">{{ 'pay.upi' | translate }}</mat-button-toggle>
+          @if (intent() === 'add_sale') {
+            <mat-button-toggle value="udhaar">{{ 'pay.udhaar' | translate }}</mat-button-toggle>
+          } @else {
+            <mat-button-toggle value="bank">{{ 'pay.bank' | translate }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      }
+    </div>
+  }
+
+  @if (problems().length && editing()) {
+    <ul class="problems">
+      @for (p of problems(); track p) {
+        <li>{{ p | translate }}</li>
+      }
+    </ul>
+  }
+
+  <div class="actions">
+    <button mat-flat-button class="ds-big-btn yes" (click)="confirm()" [disabled]="busy() || (editing() && problems().length > 0)">
+      <span class="material-symbols-outlined">check</span>{{ 'voice.yes' | translate }}
+    </button>
+    <button mat-stroked-button class="ds-big-btn" (click)="editing.set(!editing())" [disabled]="busy()">
+      <span class="material-symbols-outlined">edit</span>{{ (editing() ? 'voice.doneEditing' : 'common.edit') | translate }}
+    </button>
+    <button mat-button class="ds-big-btn" (click)="cancelled.emit()" [disabled]="busy()">{{ 'common.cancel' | translate }}</button>
+  </div>
+</div>

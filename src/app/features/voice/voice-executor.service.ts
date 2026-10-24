@@ -1,0 +1,140 @@
+import { Injectable, inject } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
+import { Observable, map, of, throwError } from 'rxjs';
+import type { Unit, VoiceParseResult } from '../../core/models/domain.models';
+import { CustomersApi, ProductsApi, SalesApi, SuppliersApi } from '../../core/services/data.services';
+import { formatPaise } from '../../shared/pipes/inr.pipe';
+
+/** What the confirmation card hands over after the user has reviewed / edited it. */
+export interface ConfirmedCommand {
+  intent: VoiceParseResult['intent'];
+  text: string;
+  customerId?: string;
+  customerName?: string;
+  supplierId?: string;
+  supplierName?: string;
+  productId?: string;
+  productName?: string;
+  amount: number | null;
+  paidAmount: number | null;
+  quantity: number | null;
+  unit: Unit | null;
+  sellingPrice: number | null;
+  paymentMode: 'cash' | 'upi' | 'udhaar' | 'bank' | null;
+  date?: string;
+  items: { productId?: string; name: string; qty: number; unit: string | null; rate: number | null }[];
+}
+
+/**
+ * Executes a confirmed voice command through the SAME endpoints the forms use,
+ * so validation, stock movements and ledgers behave identically.
+ */
+@Injectable({ providedIn: 'root' })
+export class VoiceExecutor {
+  private readonly customers = inject(CustomersApi);
+  private readonly suppliers = inject(SuppliersApi);
+  private readonly products = inject(ProductsApi);
+  private readonly sales = inject(SalesApi);
+  private readonly t = inject(TranslateService);
+
+  /** Returns a short success message (also spoken aloud). */
+  execute(c: ConfirmedCommand): Observable<string> {
+    const amount = (n: number | null) => formatPaise(n ?? 0);
+    switch (c.intent) {
+      case 'add_credit': {
+        if (!c.customerId) return this.fail('voice.err.customer');
+        const allMatched = c.items.length > 0 && c.items.every((i) => i.productId && i.rate !== null);
+        if (allMatched) {
+          // Goods on udhaar: a sale with paymentMode "udhaar" so stock and ledger both update.
+          return this.sales
+            .create({
+              customerId: c.customerId,
+              items: c.items.map((i) => ({ productId: i.productId!, qty: i.qty, rate: i.rate ?? undefined })),
+              discount: 0,
+              paymentMode: 'udhaar',
+              date: c.date,
+              source: 'voice',
+            })
+            .pipe(map((s) => this.t.instant('voice.done.credit', { amount: amount(s.totalAmount), name: c.customerName })));
+        }
+        if (!c.amount) return this.fail('voice.err.amount');
+        return this.customers
+          .addCredit(c.customerId, {
+            amount: c.amount,
+            items: c.items.map((i) => ({ productId: i.productId, name: i.name, qty: i.qty, rate: i.rate ?? 0 })),
+            note: this.t.instant('voice.noteVoice'),
+            date: c.date,
+            source: 'voice',
+            rawVoiceText: c.text,
+          })
+          .pipe(map(() => this.t.instant('voice.done.credit', { amount: amount(c.amount), name: c.customerName })));
+      }
+      case 'receive_payment':
+        if (!c.customerId) return this.fail('voice.err.customer');
+        if (!c.amount) return this.fail('voice.err.amount');
+        return this.customers
+          .addPayment(c.customerId, {
+            amount: c.amount,
+            mode: c.paymentMode === 'upi' || c.paymentMode === 'bank' ? c.paymentMode : 'cash',
+            note: this.t.instant('voice.noteVoice'),
+            date: c.date,
+            source: 'voice',
+            rawVoiceText: c.text,
+          })
+          .pipe(map(() => this.t.instant('voice.done.payment', { amount: amount(c.amount), name: c.customerName })));
+      case 'add_purchase': {
+        if (!c.supplierId) return this.fail('voice.err.supplier');
+        if (!c.items.length) return this.fail('voice.err.items');
+        if (c.items.some((i) => i.rate === null)) return this.fail('voice.err.rate');
+        const items = c.items.map((i) =>
+          i.productId
+            ? { productId: i.productId, qty: i.qty, rate: i.rate! }
+            : { newProduct: { name: i.name, unit: (i.unit as Unit) ?? 'piece' }, qty: i.qty, rate: i.rate! },
+        );
+        const total = items.reduce((s, i) => s + Math.round(i.qty * i.rate), 0);
+        return this.suppliers
+          .createPurchase({ supplierId: c.supplierId, items, paidAmount: Math.min(c.paidAmount ?? 0, total), date: c.date, source: 'voice', note: this.t.instant('voice.noteVoice') })
+          .pipe(map((p) => this.t.instant('voice.done.purchase', { amount: amount(p.totalAmount), name: c.supplierName })));
+      }
+      case 'supplier_payment':
+        if (!c.supplierId) return this.fail('voice.err.supplier');
+        if (!c.amount) return this.fail('voice.err.amount');
+        return this.suppliers
+          .pay({ supplierId: c.supplierId, amount: c.amount, mode: c.paymentMode === 'upi' || c.paymentMode === 'bank' ? c.paymentMode : 'cash', date: c.date, source: 'voice', note: this.t.instant('voice.noteVoice') })
+          .pipe(map(() => this.t.instant('voice.done.supplierPayment', { amount: amount(c.amount), name: c.supplierName })));
+      case 'add_sale': {
+        if (!c.items.length || c.items.some((i) => !i.productId)) return this.fail('voice.err.products');
+        const mode = c.paymentMode === 'udhaar' ? 'udhaar' : c.paymentMode === 'upi' ? 'upi' : 'cash';
+        if (mode === 'udhaar' && !c.customerId) return this.fail('voice.err.customer');
+        return this.sales
+          .create({
+            customerId: c.customerId,
+            items: c.items.map((i) => ({ productId: i.productId!, qty: i.qty, rate: i.rate ?? undefined })),
+            discount: 0,
+            paymentMode: mode,
+            date: c.date,
+            source: 'voice',
+          })
+          .pipe(map((s) => this.t.instant('voice.done.sale', { number: s.billNumber, amount: amount(s.totalAmount) })));
+      }
+      case 'adjust_stock':
+        if (!c.productId) return this.fail('voice.err.product');
+        if (!c.quantity) return this.fail('voice.err.quantity');
+        return this.products
+          .adjustStock({ productId: c.productId, quantity: c.quantity, type: 'adjustment', note: this.t.instant('voice.noteVoice') })
+          .pipe(map((p) => this.t.instant('voice.done.stock', { name: p.name, qty: p.currentStock, unit: p.unit })));
+      case 'add_product':
+        if (!c.productName) return this.fail('voice.err.productName');
+        if (!c.sellingPrice) return this.fail('voice.err.price');
+        return this.products
+          .create({ name: c.productName, sellingPrice: c.sellingPrice, purchasePrice: 0, unit: c.unit ?? 'piece' })
+          .pipe(map((p) => this.t.instant('voice.done.product', { name: p.name, amount: amount(p.sellingPrice) })));
+      default:
+        return of('');
+    }
+  }
+
+  private fail(key: string): Observable<never> {
+    return throwError(() => ({ error: { message: this.t.instant(key) } }));
+  }
+}

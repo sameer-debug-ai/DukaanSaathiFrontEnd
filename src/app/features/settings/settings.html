@@ -1,0 +1,116 @@
+<section class="ds-page max-w-3xl">
+  <app-page-header [title]="'settings.title' | translate" />
+
+  <!-- Shop profile -->
+  <form class="ds-card p-4 mb-4" [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate>
+    <h2 class="text-lg font-semibold mt-0 mb-4">{{ 'settings.profile' | translate }}</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'auth.shopName' | translate }}</mat-label>
+        <input matInput formControlName="shopName" />
+        <mat-error>{{ 'common.required' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'auth.ownerName' | translate }}</mat-label>
+        <input matInput formControlName="name" />
+        <mat-error>{{ 'common.required' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="sm:col-span-2">
+        <mat-label>{{ 'common.address' | translate }}</mat-label>
+        <input matInput formControlName="shopAddress" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'settings.email' | translate }}</mat-label>
+        <input matInput type="email" formControlName="email" />
+        <mat-error>{{ 'settings.emailInvalid' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'suppliers.gst' | translate }}</mat-label>
+        <input matInput formControlName="gstNumber" class="uppercase" />
+      </mat-form-field>
+    </div>
+    <p class="text-sm text-muted mt-0">{{ 'settings.loginPhone' | translate: { phone: phone } }}</p>
+    <button mat-flat-button type="submit" [disabled]="savingProfile()">{{ 'common.save' | translate }}</button>
+  </form>
+
+  <!-- Appearance -->
+  <div class="ds-card p-4 mb-4">
+    <h2 class="text-lg font-semibold mt-0 mb-4">{{ 'settings.appearance' | translate }}</h2>
+    <div class="flex items-center justify-between gap-4 mb-4 flex-wrap">
+      <span>{{ 'common.language' | translate }}</span>
+      <mat-button-toggle-group [value]="lang.current()" (change)="setLanguage($event.value)" [attr.aria-label]="'common.language' | translate">
+        <mat-button-toggle value="en">English</mat-button-toggle>
+        <mat-button-toggle value="hi">Hindi</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+    <div class="flex items-center justify-between gap-4">
+      <span>{{ 'common.darkMode' | translate }}</span>
+      <mat-slide-toggle [checked]="theme.dark()" (change)="setDark($event.checked)" [attr.aria-label]="'common.darkMode' | translate" />
+    </div>
+  </div>
+
+  <!-- Shop preferences -->
+  <form class="ds-card p-4 mb-4" [formGroup]="prefsForm" (ngSubmit)="savePrefs()" novalidate>
+    <h2 class="text-lg font-semibold mt-0 mb-4">{{ 'settings.preferences' | translate }}</h2>
+    <mat-form-field appearance="outline" class="max-w-xs">
+      <mat-label>{{ 'settings.lowStockDefault' | translate }}</mat-label>
+      <input matInput type="number" inputmode="numeric" formControlName="lowStockDefault" min="0" />
+      <mat-hint>{{ 'settings.lowStockDefaultHint' | translate }}</mat-hint>
+    </mat-form-field>
+    <div class="flex items-start justify-between gap-4 my-4">
+      <div>
+        <div>{{ 'settings.allowOversell' | translate }}</div>
+        <div class="text-sm text-muted">{{ 'settings.allowOversellHint' | translate }}</div>
+      </div>
+      <mat-slide-toggle formControlName="allowOversell" [attr.aria-label]="'settings.allowOversell' | translate" />
+    </div>
+    <button mat-flat-button type="submit">{{ 'common.save' | translate }}</button>
+  </form>
+
+  <!-- Voice assistant -->
+  <div class="ds-card p-4 mb-4">
+    <h2 class="text-lg font-semibold mt-0 mb-2">{{ 'settings.voice' | translate }}</h2>
+    @if (ai(); as a) {
+      @if (a.available) {
+        <p class="m-0"><span class="ds-badge ok"><span class="material-symbols-outlined">smart_toy</span>{{ 'settings.aiOn' | translate }}</span></p>
+      } @else {
+        <p class="m-0"><span class="ds-badge warn"><span class="material-symbols-outlined">offline_bolt</span>{{ 'settings.aiOff' | translate }}</span></p>
+        <p class="text-sm text-muted mb-0">{{ 'settings.aiOffHint' | translate }}</p>
+      }
+    }
+  </div>
+
+  <!-- Data -->
+  <div class="ds-card p-4 mb-4">
+    <h2 class="text-lg font-semibold mt-0 mb-2">{{ 'settings.data' | translate }}</h2>
+    @if (counts(); as c) {
+      <p class="text-sm text-muted mt-0">{{ 'settings.counts' | translate: c }}</p>
+    }
+    <div class="flex flex-wrap gap-3">
+      <button mat-stroked-button (click)="backup()" [disabled]="busy()"><span class="material-symbols-outlined">download</span>{{ 'settings.backup' | translate }}</button>
+      @if (counts()?.isEmpty) {
+        <button mat-stroked-button (click)="loadSample()" [disabled]="busy()"><span class="material-symbols-outlined">auto_awesome</span>{{ 'dashboard.loadSample' | translate }}</button>
+      }
+    </div>
+    <p class="text-sm text-muted mb-0">{{ 'settings.backupHint' | translate }}</p>
+  </div>
+
+  <!-- Password -->
+  <form class="ds-card p-4" [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
+    <h2 class="text-lg font-semibold mt-0 mb-4">{{ 'settings.changePassword' | translate }}</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'settings.currentPassword' | translate }}</mat-label>
+        <input matInput type="password" formControlName="currentPassword" autocomplete="current-password" />
+        <mat-error>{{ 'common.required' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'settings.newPassword' | translate }}</mat-label>
+        <input matInput type="password" formControlName="newPassword" autocomplete="new-password" />
+        <mat-hint>{{ 'auth.passwordMin' | translate }}</mat-hint>
+        <mat-error>{{ 'auth.passwordMin' | translate }}</mat-error>
+      </mat-form-field>
+    </div>
+    <button mat-flat-button type="submit" class="mt-2" [disabled]="savingPassword()">{{ 'settings.changePassword' | translate }}</button>
+  </form>
+</section>

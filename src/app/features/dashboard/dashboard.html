@@ -1,0 +1,174 @@
+<section class="ds-page">
+  <header class="hello">
+    <div>
+      <h1>{{ 'dashboard.greeting' | translate: { name: auth.user()?.name } }}</h1>
+      <p>{{ auth.user()?.shopName }} · {{ today }}</p>
+    </div>
+    <a mat-flat-button routerLink="/sales/new" class="ds-big-btn new-bill">
+      <span class="material-symbols-outlined">point_of_sale</span>
+      {{ 'dashboard.newBill' | translate }}
+    </a>
+  </header>
+
+  @if (isEmptyShop()) {
+    <div class="ds-card empty-banner">
+      <app-empty-state icon="storefront" [title]="'dashboard.emptyTitle' | translate" [hint]="'dashboard.emptyHint' | translate">
+        <div class="flex flex-wrap gap-2 justify-center">
+          <button mat-flat-button class="ds-big-btn" (click)="loadSample()" [disabled]="loadingSample()">
+            <span class="material-symbols-outlined">auto_awesome</span>
+            {{ (loadingSample() ? 'common.loading' : 'dashboard.loadSample') | translate }}
+          </button>
+          <a mat-stroked-button class="ds-big-btn" routerLink="/products" [queryParams]="{ add: 1 }">{{ 'dashboard.addFirstProduct' | translate }}</a>
+        </div>
+      </app-empty-state>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="stats"><app-skeleton [rows]="1" [height]="88" /><app-skeleton [rows]="1" [height]="88" /><app-skeleton [rows]="1" [height]="88" /><app-skeleton [rows]="1" [height]="88" /></div>
+    <app-skeleton [rows]="2" [height]="220" />
+  } @else if (summary(); as s) {
+    <div class="stats">
+      <app-stat-card [label]="'dashboard.todaySales' | translate" [value]="s.today.sales | inr" icon="payments" tone="brand"
+        [hint]="'dashboard.bills' | translate: { count: s.today.salesCount }" link="/sales" />
+      <app-stat-card [label]="'dashboard.todayUdhaar' | translate" [value]="s.today.udhaarGiven | inr" icon="call_made" tone="danger" link="/customers" />
+      <app-stat-card [label]="'dashboard.todayPayments' | translate" [value]="s.today.paymentsReceived | inr" icon="call_received" tone="ok" link="/customers" />
+      <app-stat-card [label]="'dashboard.totalOutstanding' | translate" [value]="s.totalOutstanding | inr" icon="menu_book" tone="danger"
+        [hint]="'dashboard.customersDue' | translate: { count: s.customersWithDue }" link="/customers" [query]="{ filter: 'due' }" />
+      <app-stat-card [label]="'dashboard.totalPayable' | translate" [value]="s.totalPayable | inr" icon="local_shipping" tone="warn" link="/suppliers" />
+      <app-stat-card [label]="'dashboard.lowStock' | translate" [value]="'' + s.lowStockCount" icon="warning" tone="warn" link="/products/alerts" />
+      <app-stat-card [label]="'dashboard.outOfStock' | translate" [value]="'' + s.outOfStockCount" icon="block" tone="danger" link="/products/alerts" />
+    </div>
+
+    <nav class="quick" [attr.aria-label]="'dashboard.quickActions' | translate">
+      <a routerLink="/sales/new"><span class="material-symbols-outlined">point_of_sale</span>{{ 'dashboard.qa.bill' | translate }}</a>
+      <a routerLink="/customers"><span class="material-symbols-outlined">add_card</span>{{ 'dashboard.qa.udhaar' | translate }}</a>
+      <a routerLink="/purchases/new"><span class="material-symbols-outlined">add_shopping_cart</span>{{ 'dashboard.qa.purchase' | translate }}</a>
+      <a routerLink="/products" [queryParams]="{ add: 1 }"><span class="material-symbols-outlined">add_box</span>{{ 'dashboard.qa.product' | translate }}</a>
+      <a routerLink="/reports"><span class="material-symbols-outlined">bar_chart</span>{{ 'dashboard.qa.reports' | translate }}</a>
+    </nav>
+
+    <div class="charts">
+      <div class="ds-card chart-card wide">
+        <div class="chart-head">
+          <div>
+            <h2>{{ 'dashboard.salesTrend' | translate }}</h2>
+            <p>{{ 'dashboard.totalIn' | translate: { days: days() } }}: <strong>{{ chartTotals()?.sales }}</strong></p>
+          </div>
+          <div class="ds-chips" role="group">
+            <button class="ds-chip" [class.active]="days() === 7" (click)="setDays(7)">{{ 'range.7d' | translate }}</button>
+            <button class="ds-chip" [class.active]="days() === 30" (click)="setDays(30)">{{ 'range.30d' | translate }}</button>
+          </div>
+        </div>
+        @if (salesChart(); as cfg) {
+          <div class="chart-box" role="img" [attr.aria-label]="'dashboard.salesTrend' | translate">
+            <canvas baseChart [type]="cfg.type" [data]="cfg.data" [options]="cfg.options"></canvas>
+          </div>
+        }
+      </div>
+
+      <div class="ds-card chart-card">
+        <div class="chart-head">
+          <div>
+            <h2>{{ 'dashboard.topProducts' | translate }}</h2>
+            <p>{{ 'dashboard.byRevenue' | translate: { days: days() } }}</p>
+          </div>
+        </div>
+        @if (charts()?.topProducts?.length) {
+          @if (topChart(); as cfg) {
+            <div class="chart-box" role="img" [attr.aria-label]="'dashboard.topProducts' | translate">
+              <canvas baseChart [type]="cfg.type" [data]="cfg.data" [options]="cfg.options"></canvas>
+            </div>
+          }
+        } @else {
+          <app-empty-state icon="bar_chart" [title]="'dashboard.noSalesYet' | translate" />
+        }
+      </div>
+
+      <div class="ds-card chart-card">
+        <div class="chart-head">
+          <div>
+            <h2>{{ 'dashboard.udhaarVsRecovered' | translate }}</h2>
+            <p>{{ 'dashboard.udhaarGiven' | translate }} {{ chartTotals()?.given }} · {{ 'dashboard.recovered' | translate }} {{ chartTotals()?.recovered }}</p>
+          </div>
+        </div>
+        @if (udhaarChart(); as cfg) {
+          <div class="chart-box" role="img" [attr.aria-label]="'dashboard.udhaarVsRecovered' | translate">
+            <canvas baseChart [type]="cfg.type" [data]="cfg.data" [options]="cfg.options"></canvas>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="lists">
+      <div class="ds-card">
+        <div class="ds-section-title">
+          <h2>{{ 'dashboard.lowStockList' | translate }}</h2>
+          <a routerLink="/products/alerts">{{ 'common.viewAll' | translate }}</a>
+        </div>
+        @if (s.lowStockProducts.length) {
+          <div class="ds-list">
+            @for (p of s.lowStockProducts; track p.id) {
+              <div class="ds-list-item flex-wrap">
+                <a class="low-name" [routerLink]="['/products', p.id]">
+                  <div class="title">{{ p.name }}</div>
+                  <div class="sub">{{ 'stock.left' | translate: { qty: p.currentStock, unit: p.unit } }} · {{ 'stock.minimum' | translate: { qty: p.lowStockThreshold } }}</div>
+                </a>
+                <app-stock-badge [status]="p.stockStatus" />
+                <button mat-stroked-button (click)="reorder(p.id, p.supplierId)">{{ 'dashboard.reorder' | translate }}</button>
+              </div>
+            }
+          </div>
+        } @else {
+          <app-empty-state icon="inventory" [title]="'dashboard.allStocked' | translate" />
+        }
+      </div>
+
+      <div class="ds-card">
+        <div class="ds-section-title">
+          <h2>{{ 'dashboard.topDebtors' | translate }}</h2>
+          <a routerLink="/customers">{{ 'common.viewAll' | translate }}</a>
+        </div>
+        @if (s.topDebtors.length) {
+          <div class="ds-list">
+            @for (c of s.topDebtors; track c.id) {
+              <a class="ds-list-item" [routerLink]="['/customers', c.id]">
+                <span class="ds-avatar">{{ initials(c.name) }}</span>
+                <div class="flex-1 min-w-0">
+                  <div class="title">{{ c.name }}</div>
+                  <div class="sub">{{ c.lastTransactionAt ? ('customers.lastTxn' | translate: { date: (c.lastTransactionAt | istDate) }) : c.phone }}</div>
+                </div>
+                <strong class="amount-credit tabular">{{ c.currentBalance | inr }}</strong>
+              </a>
+            }
+          </div>
+        } @else {
+          <app-empty-state icon="sentiment_satisfied" [title]="'dashboard.noUdhaar' | translate" />
+        }
+      </div>
+
+      <div class="ds-card">
+        <div class="ds-section-title">
+          <h2>{{ 'dashboard.recent' | translate }}</h2>
+          <a routerLink="/sales">{{ 'common.viewAll' | translate }}</a>
+        </div>
+        @if (s.recentTransactions.length) {
+          <div class="ds-list">
+            @for (r of s.recentTransactions; track r.kind + r.id) {
+              <a class="ds-list-item" [routerLink]="r.link">
+                <span class="ds-badge txn" [class]="'ds-badge txn ' + txnIcon[r.kind].cls"><span class="material-symbols-outlined">{{ txnIcon[r.kind].icon }}</span></span>
+                <div class="flex-1 min-w-0">
+                  <div class="title">{{ r.title }}</div>
+                  <div class="sub">{{ ('txn.' + r.kind) | translate }} · {{ r.subtitle }} · {{ r.date | istDate: true }}</div>
+                </div>
+                <strong class="tabular" [class.amount-credit]="r.kind === 'udhaar'" [class.amount-payment]="r.kind === 'payment'">{{ r.amount | inr }}</strong>
+              </a>
+            }
+          </div>
+        } @else {
+          <app-empty-state icon="receipt_long" [title]="'dashboard.noTxn' | translate" />
+        }
+      </div>
+    </div>
+  }
+</section>

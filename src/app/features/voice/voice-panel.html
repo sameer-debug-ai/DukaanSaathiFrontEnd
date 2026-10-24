@@ -1,0 +1,100 @@
+<div class="panel">
+  <header class="head">
+    <span class="material-symbols-outlined icon-filled text-danger">mic</span>
+    <h2>{{ 'voice.title' | translate }}</h2>
+    <button type="button" class="lang" (click)="toggleLang()" [attr.aria-label]="'voice.recognitionLang' | translate">
+      {{ speechLang() === 'hi-IN' ? 'Hindi' : 'English' }}
+    </button>
+    <button mat-icon-button (click)="toggleSpeak()" [attr.aria-label]="'voice.speakBack' | translate" [attr.aria-pressed]="speakBack()">
+      <span class="material-symbols-outlined">{{ speakBack() ? 'volume_up' : 'volume_off' }}</span>
+    </button>
+    <button mat-icon-button (click)="close()" [attr.aria-label]="'common.close' | translate">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </header>
+
+  <div class="body">
+    @switch (stage()) {
+      @case ('parsing') {
+        <div class="center">
+          <mat-progress-spinner mode="indeterminate" diameter="48" />
+          <p class="heard">“{{ text() }}”</p>
+          <p class="text-muted">{{ 'voice.understanding' | translate }}</p>
+        </div>
+      }
+      @case ('confirm') {
+        <p class="heard small">“{{ result()!.text }}”</p>
+        <app-voice-confirm [result]="result()!" (confirmed)="onConfirm($event)" (cancelled)="onCancel()" />
+        @if (result()!.engine === 'rules') {
+          <p class="engine">{{ 'voice.offlineParser' | translate }}</p>
+        }
+      }
+      @case ('saving') {
+        <div class="center">
+          <mat-progress-spinner mode="indeterminate" diameter="48" />
+          <p class="text-muted">{{ 'voice.saving' | translate }}</p>
+        </div>
+      }
+      @case ('done') {
+        <div class="center">
+          <span class="material-symbols-outlined icon-filled big text-ok">check_circle</span>
+          <p class="answer">{{ message() }}</p>
+          <div class="flex gap-2 flex-wrap justify-center">
+            <button mat-flat-button class="ds-big-btn" (click)="again()"><span class="material-symbols-outlined">mic</span>{{ 'voice.another' | translate }}</button>
+            <button mat-stroked-button class="ds-big-btn" (click)="close()">{{ 'common.close' | translate }}</button>
+          </div>
+        </div>
+      }
+      @case ('answer') {
+        <div class="center">
+          <span class="material-symbols-outlined icon-filled big" [class.text-brand]="result()?.intent !== 'unknown'" [class.text-warn]="result()?.intent === 'unknown'">
+            {{ result()?.intent === 'unknown' ? 'help' : 'record_voice_over' }}
+          </span>
+          <p class="heard small">“{{ result()?.text }}”</p>
+          <p class="answer">{{ message() }}</p>
+          <div class="flex gap-2 flex-wrap justify-center">
+            <button mat-flat-button class="ds-big-btn" (click)="again()"><span class="material-symbols-outlined">mic</span>{{ 'voice.askAgain' | translate }}</button>
+            <button mat-stroked-button class="ds-big-btn" (click)="close()">{{ 'common.close' | translate }}</button>
+          </div>
+        </div>
+      }
+      @default {
+        <!-- idle / listening -->
+        <div class="center">
+          @if (speech.supported) {
+            <button type="button" class="mic" [class.on]="stage() === 'listening'" (click)="stage() === 'listening' ? stopListening() : listen()"
+              [attr.aria-label]="(stage() === 'listening' ? 'voice.stop' : 'voice.tapToSpeak') | translate">
+              <span class="material-symbols-outlined icon-filled">{{ stage() === 'listening' ? 'graphic_eq' : 'mic' }}</span>
+            </button>
+            <p class="status">{{ (stage() === 'listening' ? 'voice.listening' : 'voice.tapToSpeak') | translate }}</p>
+            @if (speech.transcript() || speech.interim()) {
+              <p class="heard live" aria-live="polite">{{ speech.transcript() }} <span class="text-muted">{{ speech.interim() }}</span></p>
+            }
+            @if (errorKey(); as k) {
+              <p class="text-warn">{{ k | translate }}</p>
+            }
+          } @else {
+            <div class="unsupported">
+              <span class="material-symbols-outlined">mic_off</span>
+              <p>{{ 'voice.unsupported' | translate }}</p>
+            </div>
+          }
+        </div>
+
+        <form class="type" (ngSubmit)="submit()">
+          <input [ngModel]="text()" (ngModelChange)="text.set($event)" name="cmd" [placeholder]="placeholder()" autocomplete="off" [attr.aria-label]="placeholder()" />
+          <button mat-flat-button type="submit" [disabled]="!text().trim()"><span class="material-symbols-outlined">send</span></button>
+        </form>
+
+        <div class="examples">
+          <div class="text-xs text-muted mb-2">{{ 'voice.tryThese' | translate }}</div>
+          <div class="chips">
+            @for (e of examples; track e) {
+              <button type="button" class="ds-chip" (click)="useExample(e)">{{ e }}</button>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

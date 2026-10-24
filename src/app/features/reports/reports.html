@@ -1,0 +1,74 @@
+<section class="ds-page">
+  <app-page-header [title]="'nav.reports' | translate" [subtitle]="'reports.subtitle' | translate">
+    <button mat-stroked-button (click)="exportCsv()" [disabled]="!report()"><span class="material-symbols-outlined">csv</span>CSV</button>
+    <button mat-stroked-button (click)="exportPdf()" [disabled]="!report()"><span class="material-symbols-outlined">picture_as_pdf</span>PDF</button>
+  </app-page-header>
+
+  <div class="ds-chips mb-3" role="tablist">
+    @for (r of reports; track r.id) {
+      <button class="ds-chip" role="tab" [attr.aria-selected]="active() === r.id" [class.active]="active() === r.id" (click)="select(r.id)">
+        <span class="material-symbols-outlined align-middle text-[18px] mr-1">{{ r.icon }}</span>{{ r.key | translate }}
+      </button>
+    }
+  </div>
+
+  @if (ranged()) {
+    <div class="mb-4"><app-date-range initial="30d" (rangeChange)="setRange($event)" /></div>
+  } @else {
+    <p class="text-muted mb-4">{{ 'reports.asOfToday' | translate }}</p>
+  }
+
+  @if (loading()) {
+    <app-skeleton [rows]="1" [height]="88" />
+    <div class="mt-3"><app-skeleton [rows]="5" /></div>
+  } @else if (report(); as r) {
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      @for (t of tiles(); track t.key) {
+        <app-stat-card [label]="t.key | translate" [value]="t.value" [icon]="t.icon" [tone]="t.tone" />
+      }
+    </div>
+
+    @if (chart(); as cfg) {
+      <div class="ds-card p-4 mb-4">
+        <h2 class="m-0 mb-2 text-base font-semibold">{{ activeKey() | translate }}</h2>
+        <div class="relative h-64" role="img" [attr.aria-label]="activeKey() | translate">
+          <canvas baseChart [type]="cfg.type" [data]="cfg.data" [options]="cfg.options"></canvas>
+        </div>
+      </div>
+    }
+
+    <div class="ds-card overflow-hidden">
+      @if (!r.rows.length) {
+        <app-empty-state icon="bar_chart" [title]="'reports.empty' | translate" [hint]="'reports.emptyHint' | translate" />
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="ds-table">
+            <thead>
+              <tr>
+                @for (c of r.columns; track c.key) {
+                  <th [class.num]="c.type === 'money' || c.type === 'number'">{{ ('reports.col.' + c.key) | translate }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of r.rows; track $index) {
+                <tr>
+                  @for (c of r.columns; track c.key) {
+                    <td [class.num]="c.type === 'money' || c.type === 'number'" [class.font-semibold]="$first">{{ cell(c.type, row[c.key]) }}</td>
+                  }
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr class="font-bold">
+                @for (c of r.columns; track c.key; let first = $first) {
+                  <td [class.num]="c.type === 'money' || c.type === 'number'">{{ first ? ('common.total' | translate) : (r.totals[c.key] !== undefined ? cell(c.type, r.totals[c.key]) : '') }}</td>
+                }
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</section>
