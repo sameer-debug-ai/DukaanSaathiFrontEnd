@@ -51,7 +51,7 @@ export class ProductsApi {
   get(id: string) {
     return this.api.get<Product>(`/products/${id}`);
   }
-  create(body: ProductInput) {
+  create(body: ProductInput & VoiceLink) {
     return this.api.post<Product>('/products', body);
   }
   update(id: string, body: Partial<ProductInput>) {
@@ -75,7 +75,7 @@ export class ProductsApi {
       { rows, updateExisting },
     );
   }
-  adjustStock(body: { productId: string; quantity: number; type: 'adjustment' | 'damage' | 'return' | 'purchase'; note?: string }) {
+  adjustStock(body: { productId: string; quantity: number; type: 'adjustment' | 'damage' | 'return' | 'purchase'; note?: string } & VoiceLink) {
     return this.api.post<Product>('/stock/adjust', body);
   }
   history(productId: string, params: QueryParams) {
@@ -100,7 +100,7 @@ export class CustomersApi {
   get(id: string) {
     return this.api.get<CustomerDetail>(`/customers/${id}`);
   }
-  create(body: CustomerInput) {
+  create(body: CustomerInput & VoiceLink) {
     return this.api.post<Customer>('/customers', body);
   }
   update(id: string, body: Partial<CustomerInput>) {
@@ -112,10 +112,10 @@ export class CustomersApi {
   ledger(id: string, params?: QueryParams) {
     return this.api.get<CustomerLedger>(`/customers/${id}/ledger`, params);
   }
-  addCredit(id: string, body: { amount: number; note?: string; items?: { productId?: string; name: string; qty: number; rate: number }[]; date?: string; source?: 'manual' | 'voice'; rawVoiceText?: string }) {
+  addCredit(id: string, body: { amount: number; note?: string; items?: { productId?: string; name: string; qty: number; rate: number }[]; date?: string; source?: 'manual' | 'voice'; rawVoiceText?: string } & VoiceLink) {
     return this.api.post<{ entry: LedgerEntry; customer: Customer }>(`/customers/${id}/ledger/credit`, body);
   }
-  addPayment(id: string, body: { amount: number; mode: PaymentMode; note?: string; date?: string; source?: 'manual' | 'voice'; rawVoiceText?: string }) {
+  addPayment(id: string, body: { amount: number; mode: PaymentMode; note?: string; date?: string; source?: 'manual' | 'voice'; rawVoiceText?: string } & VoiceLink) {
     return this.api.post<{ entry: LedgerEntry; customer: Customer }>(`/customers/${id}/ledger/payment`, body);
   }
 }
@@ -168,13 +168,13 @@ export class SuppliersApi {
   purchase(id: string) {
     return this.api.get<Purchase>(`/purchases/${id}`);
   }
-  createPurchase(body: PurchaseInput) {
+  createPurchase(body: PurchaseInput & VoiceLink) {
     return this.api.post<Purchase>('/purchases', body);
   }
   payments(params: QueryParams) {
     return this.api.getPaged<SupplierPayment>('/supplier-payments', params);
   }
-  pay(body: { supplierId: string; amount: number; mode: PaymentMode; note?: string; date?: string; source?: 'manual' | 'voice' }) {
+  pay(body: { supplierId: string; amount: number; mode: PaymentMode; note?: string; date?: string; source?: 'manual' | 'voice' } & VoiceLink) {
     return this.api.post<{ payment: SupplierPayment; supplier: Supplier }>('/supplier-payments', body);
   }
 }
@@ -200,7 +200,7 @@ export class SalesApi {
   get(id: string) {
     return this.api.get<Sale>(`/sales/${id}`);
   }
-  create(body: SaleInput) {
+  create(body: SaleInput & VoiceLink) {
     return this.api.post<Sale & { warnings?: unknown[] }>('/sales', body);
   }
 }
@@ -227,6 +227,17 @@ export class ReportsApi {
   }
 }
 
+export interface AliasLearning {
+  kind: 'customer' | 'product' | 'supplier';
+  id: string;
+  alias: string;
+}
+
+/** Sent with an entry the voice assistant saves, so it can be undone. */
+export interface VoiceLink {
+  voiceLogId?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class VoiceApi {
   private readonly api = inject(ApiService);
@@ -241,6 +252,17 @@ export class VoiceApi {
   }
   updateLog(id: string, body: { status: 'confirmed' | 'cancelled' | 'failed'; resultMessage?: string; error?: string }) {
     return this.api.patch<VoiceLog>(`/voice-logs/${id}`, body);
+  }
+  /** Reverse everything a saved voice command did (within the undo window). */
+  undo(logId: string) {
+    return this.api.post<VoiceLog>(`/ai/undo/${logId}`, {});
+  }
+  undoLast() {
+    return this.api.post<VoiceLog>('/ai/undo-last', {});
+  }
+  /** Remember spoken names for records the user picked, so they match directly next time. */
+  learnAliases(items: AliasLearning[]) {
+    return this.api.post<(AliasLearning & { added: boolean; reason?: string })[]>('/ai/learn-aliases', { items });
   }
 }
 

@@ -119,6 +119,27 @@
     margin-bottom: 2px;
   }
 }
+.undo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--ds-warn);
+  border-radius: 999px;
+  background: var(--ds-warn-soft);
+  color: var(--ds-warn);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+  .material-symbols-outlined {
+    font-size: 20px;
+  }
+}
 .big {
   font-size: 56px;
 }

@@ -17,6 +17,7 @@ const STATUS: Record<VoiceLog['status'], { cls: string; icon: string }> = {
   cancelled: { cls: 'muted', icon: 'cancel' },
   failed: { cls: 'danger', icon: 'error' },
   pending: { cls: 'warn', icon: 'schedule' },
+  undone: { cls: 'info', icon: 'undo' },
 };
 
 @Component({
@@ -76,7 +77,7 @@ export class VoiceHistory {
   protected readonly voice = inject(VoiceUi);
 
   protected readonly st = STATUS;
-  protected readonly statuses: (VoiceLog['status'] | '')[] = ['', 'confirmed', 'cancelled', 'failed', 'pending'];
+  protected readonly statuses: (VoiceLog['status'] | '')[] = ['', 'confirmed', 'undone', 'cancelled', 'failed', 'pending'];
   protected readonly status = signal<VoiceLog['status'] | ''>('');
   protected readonly items = signal<VoiceLog[]>([]);
   protected readonly loading = signal(true);

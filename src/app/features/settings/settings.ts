@@ -57,6 +57,13 @@ export class Settings implements OnInit {
     allowOversell: [this.user.settings.allowOversell],
   });
 
+  protected readonly undoChoices = [30, 60, 120];
+  protected readonly voiceForm = this.fb.group({
+    voiceAlwaysConfirm: [this.user.settings.voiceAlwaysConfirm ?? true],
+    voiceAutoSaveThreshold: [this.user.settings.voiceAutoSaveThreshold ?? 0.85],
+    voiceUndoSeconds: [this.user.settings.voiceUndoSeconds ?? 60],
+  });
+
   protected readonly passwordForm = this.fb.group({
     currentPassword: ['', Validators.required],
     newPassword: ['', [Validators.required, Validators.minLength(6)]],
@@ -92,6 +99,13 @@ export class Settings implements OnInit {
       next: () => this.toast.success('settings.saved'),
       error: (e) => this.toast.apiError(e),
     });
+  }
+
+  protected saveVoice(): void {
+    const v = this.voiceForm.getRawValue();
+    this.auth
+      .updateProfile({ settings: { voiceAlwaysConfirm: v.voiceAlwaysConfirm, voiceAutoSaveThreshold: Number(v.voiceAutoSaveThreshold), voiceUndoSeconds: Number(v.voiceUndoSeconds) } })
+      .subscribe({ next: () => this.toast.success('settings.saved'), error: (e) => this.toast.apiError(e) });
   }
 
   protected setLanguage(lang: Language): void {

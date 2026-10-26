@@ -92,16 +92,16 @@
 
       <div class="lines">
         @for (l of cart(); track l.product.id) {
-          <div class="line">
-            <div class="l-top">
-              <span class="l-name">{{ l.product.name }}</span>
-              <span class="l-total">{{ l.qty * l.rate | inr }}</span>
-            </div>
-            <div class="l-bottom">
+          <!-- One compact row per item, so several items fit without scrolling. -->
+          <div class="line" [attr.data-line]="l.product.id" [class.flash]="lastAdded() === l.product.id">
+            <div class="l-info">
+              <span class="l-name" [title]="l.product.name">{{ l.product.name }}</span>
               <label class="rate">
                 ₹<input type="number" inputmode="decimal" [ngModel]="l.rate / 100" (ngModelChange)="setRate(l, $event)" [attr.aria-label]="'purchases.rate' | translate" />
                 <span>/{{ l.product.unit }}</span>
               </label>
+            </div>
+            <div class="l-right">
               <div class="stepper">
                 <button type="button" (click)="step(l, -1)" [attr.aria-label]="'billing.less' | translate">
                   <span class="material-symbols-outlined">{{ l.qty <= 1 ? 'delete' : 'remove' }}</span>
@@ -111,6 +111,7 @@
                   <span class="material-symbols-outlined">add</span>
                 </button>
               </div>
+              <span class="l-total">{{ l.qty * l.rate | inr }}</span>
             </div>
             @if (l.qty > l.product.currentStock) {
               <div class="l-warn">
@@ -163,13 +164,16 @@
             }
           </div>
 
-          <!-- Discount / paid now -->
+          <!-- Discount (hidden until asked for, to leave room for items) / paid now -->
+          @if (showDiscount() || discount() || mode() === 'partial') {
           <div class="money-row">
-            <label class="field small">
-              <span class="lbl">{{ 'billing.discount' | translate }}</span>
-              <span class="cur">₹</span>
-              <input type="number" inputmode="decimal" min="0" placeholder="0" [ngModel]="discount()" (ngModelChange)="discount.set($event)" />
-            </label>
+            @if (showDiscount() || discount()) {
+              <label class="field small">
+                <span class="lbl">{{ 'billing.discount' | translate }}</span>
+                <span class="cur">₹</span>
+                <input #discountInput type="number" inputmode="decimal" min="0" placeholder="0" [ngModel]="discount()" (ngModelChange)="discount.set($event)" />
+              </label>
+            }
             @if (mode() === 'partial') {
               <label class="field small">
                 <span class="lbl">{{ 'billing.paidNow' | translate }}</span>
@@ -178,6 +182,12 @@
               </label>
             }
           </div>
+          }
+          @if (!showDiscount() && !discount()) {
+            <button type="button" class="add-discount" (click)="showDiscount.set(true)">
+              <span class="material-symbols-outlined" aria-hidden="true">sell</span>{{ 'billing.addDiscount' | translate }}
+            </button>
+          }
 
           <!-- Totals -->
           @if (discountPaise() || credit()) {

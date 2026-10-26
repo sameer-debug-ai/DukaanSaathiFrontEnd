@@ -196,7 +196,8 @@
     "sale": "बिक्री",
     "adjustment": "सुधार",
     "return": "वापसी",
-    "damage": "खराब"
+    "damage": "खराब",
+    "reversal": "वापस लिया"
   },
   "products": {
     "count": "{{count}} सामान",
@@ -208,6 +209,12 @@
     "allCategories": "सभी श्रेणियाँ",
     "aliases": "दूसरे नाम",
     "aliasesHint": "कॉमा से अलग करें, जैसे: चीनी, शक्कर (खोज और आवाज़ में मदद)",
+    "formSubtitle": "नाम, दाम और स्टॉक की जानकारी",
+    "sectionBasic": "मुख्य जानकारी",
+    "sectionPrice": "दाम",
+    "sectionStock": "स्टॉक",
+    "namePlaceholder": "जैसे Tata Salt 1kg",
+    "marginLine": "मार्जिन {{value}}% · हर यूनिट पर {{profit}} मुनाफ़ा",
     "unit": "इकाई",
     "threshold": "कम स्टॉक अलर्ट",
     "thresholdHint": "स्टॉक इतना रह जाए तो अलर्ट",
@@ -264,6 +271,11 @@
     "nickname": "पुकार का नाम",
     "nicknamePlaceholder": "जैसे: शर्मा जी",
     "nicknameHint": "कॉमा से अलग करें। खोज और आवाज़ में मदद करता है।",
+    "formSubtitle": "इनका उधार खाता ₹0 से शुरू होगा",
+    "sectionWho": "ग्राहक",
+    "sectionContact": "संपर्क",
+    "sectionUdhaar": "उधार",
+    "phoneHint": "10 अंकों का नंबर, WhatsApp याद दिलाने के लिए",
     "creditLimit": "उधार सीमा (वैकल्पिक)",
     "creditLimitHint": "उधार इससे ज़्यादा हो तो चेतावनी",
     "added": "ग्राहक जुड़ गया",
@@ -407,6 +419,7 @@
     "emptyCart": "कम से कम एक सामान जोड़ें",
     "emptyCartHint": "सामान पर टैप करें, बारकोड स्कैन करें या माइक से बोलें",
     "emptyTitle": "बिल अभी खाली है",
+    "addDiscount": "छूट जोड़ें",
     "speak": "बोलकर सामान जोड़ें",
     "due": "बाकी",
     "viewBill": "बिल देखें",
@@ -530,7 +543,17 @@
     "currentPassword": "मौजूदा पासवर्ड",
     "newPassword": "नया पासवर्ड",
     "passwordChanged": "पासवर्ड बदल दिया गया",
-    "saved": "सेटिंग्स सेव हो गईं"
+    "saved": "सेटिंग्स सेव हो गईं",
+    "voiceAlwaysConfirm": "हमेशा सेव से पहले पूछो",
+    "voiceAlwaysConfirmHint": "हर आवाज़ वाले कमांड पर पुष्टि कार्ड दिखाएँ। बंद करने पर साफ़ कमांड सीधे सेव होंगे (फिर भी वापस ले सकते हैं)।",
+    "voiceThreshold": "बिना पूछे सेव तब करें जब सहायक हो",
+    "voiceThresholdHint": "ऊँचा रखने पर सिर्फ़ बिल्कुल साफ़ कमांड ही सीधे सेव होंगे।",
+    "thresholdStrict": "पूरा पक्का",
+    "thresholdNormal": "पक्का",
+    "thresholdLoose": "काफ़ी पक्का",
+    "voiceUndo": "वापस लेने का समय",
+    "voiceUndoHint": "सेव के बाद कितनी देर तक आवाज़ वाली एंट्री वापस ले सकते हैं, Undo बटन से या “गलती हो गई” बोलकर।",
+    "seconds": "{{n}} सेकंड"
   },
   "more": {
     "title": "और"
@@ -600,13 +623,15 @@
       "query_balance": "बाकी पूछा",
       "query_stock": "स्टॉक पूछा",
       "query_summary": "बिक्री सारांश",
-      "unknown": "समझ नहीं आया"
+      "unknown": "समझ नहीं आया",
+      "undo_last": "पिछली एंट्री वापस"
     },
     "status": {
       "confirmed": "सेव हुआ",
       "cancelled": "रद्द",
       "failed": "नहीं हुआ",
-      "pending": "पक्का नहीं किया"
+      "pending": "पक्का नहीं किया",
+      "undone": "वापस लिया"
     },
     "ask": {
       "add_credit": "{{name}} के खाते में {{amount}} उधार जोड़ना है?",
@@ -645,6 +670,15 @@
       "quantity": "मात्रा डालें",
       "productName": "सामान का नाम डालें",
       "price": "बिक्री दाम डालें"
-    }
+    },
+    "undo": "वापस लें",
+    "undoLong": "यह एंट्री वापस लें",
+    "undoneMsg": "वापस लिया: “{{text}}”"
+  },
+  "aliases": {
+    "title": "दूसरे नाम (आवाज़ और खोज)",
+    "empty": "अभी कोई दूसरा नाम नहीं। आवाज़ सहायक में सही नाम चुनने पर ये अपने आप जुड़ते हैं।",
+    "remove": "{{name}} हटाएँ",
+    "removed": "“{{name}}” हटाया"
   }
 }

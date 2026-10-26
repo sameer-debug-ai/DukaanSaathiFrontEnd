@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { MatButton } from '@angular/material/button';
+import { MatButton, MatIconButton } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
@@ -12,6 +12,7 @@ import { UNITS, type Product } from '../../core/models/domain.models';
 import { ProductsApi, type ProductInput } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
 import { toPaise, toRupees } from '../../core/utils/format';
+import { formatPaise } from '../../shared/pipes/inr.pipe';
 
 export interface ProductFormData {
   product?: Product;
@@ -24,91 +25,122 @@ export interface ProductFormData {
 
 @Component({
   selector: 'app-product-form-dialog',
-  imports: [ReactiveFormsModule, MatDialogModule, MatButton, MatFormFieldModule, MatInput, MatSelectModule, MatAutocompleteModule, TranslatePipe],
+  imports: [ReactiveFormsModule, MatDialogModule, MatButton, MatIconButton, MatFormFieldModule, MatInput, MatSelectModule, MatAutocompleteModule, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ (data.product ? 'products.edit' : 'products.add') | translate }}</h2>
-    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
-      <mat-dialog-content>
-        <div class="grid">
-          <mat-form-field appearance="outline" class="span2">
-            <mat-label>{{ 'products.name' | translate }}</mat-label>
-            <input matInput formControlName="name" cdkFocusInitial />
-            <mat-error>{{ 'common.required' | translate }}</mat-error>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>{{ 'products.nameHindi' | translate }}</mat-label>
-            <input matInput formControlName="nameHindi" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>{{ 'products.category' | translate }}</mat-label>
-            <input matInput formControlName="category" [matAutocomplete]="cats" />
-            <mat-autocomplete #cats="matAutocomplete">
-              @for (c of data.categories; track c) {
-                <mat-option [value]="c">{{ c }}</mat-option>
-              }
-            </mat-autocomplete>
-          </mat-form-field>
-          <mat-form-field appearance="outline" class="span2">
-            <mat-label>{{ 'products.aliases' | translate }}</mat-label>
-            <input matInput formControlName="aliases" />
-            <mat-hint>{{ 'products.aliasesHint' | translate }}</mat-hint>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>{{ 'products.unit' | translate }}</mat-label>
-            <mat-select formControlName="unit">
-              @for (u of units; track u) {
-                <mat-option [value]="u">{{ ('units.' + u) | translate }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>{{ 'products.threshold' | translate }}</mat-label>
-            <input matInput type="number" inputmode="decimal" formControlName="lowStockThreshold" min="0" />
-            <mat-hint>{{ 'products.thresholdHint' | translate }}</mat-hint>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>{{ 'products.purchasePrice' | translate }}</mat-label>
-            <span matTextPrefix>₹&nbsp;</span>
-            <input matInput type="number" inputmode="decimal" formControlName="purchasePrice" min="0" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>{{ 'products.sellingPrice' | translate }}</mat-label>
-            <span matTextPrefix>₹&nbsp;</span>
-            <input matInput type="number" inputmode="decimal" formControlName="sellingPrice" min="0" />
-            <mat-error>{{ 'common.required' | translate }}</mat-error>
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>{{ 'products.mrp' | translate }}</mat-label>
-            <span matTextPrefix>₹&nbsp;</span>
-            <input matInput type="number" inputmode="decimal" formControlName="mrp" min="0" />
-          </mat-form-field>
-          @if (!data.product) {
-            <mat-form-field appearance="outline">
-              <mat-label>{{ 'products.openingStock' | translate }}</mat-label>
-              <input matInput type="number" inputmode="decimal" formControlName="openingStock" min="0" />
-            </mat-form-field>
-          }
-          <mat-form-field appearance="outline">
-            <mat-label>{{ 'products.barcode' | translate }}</mat-label>
-            <input matInput formControlName="barcode" />
-          </mat-form-field>
+    <div class="fd">
+      <header class="fd-head">
+        <span class="fd-icon"><span class="material-symbols-outlined">{{ data.product ? 'edit_note' : 'add_box' }}</span></span>
+        <div class="fd-titles">
+          <h2 mat-dialog-title>{{ (data.product ? 'products.edit' : 'products.add') | translate }}</h2>
+          <p>{{ 'products.formSubtitle' | translate }}</p>
         </div>
-        @if (margin(); as m) {
-          <p class="margin" [class.text-danger]="m < 0">{{ 'products.margin' | translate: { value: m } }}</p>
-        }
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button mat-button type="button" mat-dialog-close>{{ 'common.cancel' | translate }}</button>
-        <button mat-flat-button type="submit" [disabled]="saving()">{{ 'common.save' | translate }}</button>
-      </mat-dialog-actions>
-    </form>
-  `,
-  styles: `
-    .grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; padding-top: 6px; }
-    .span2 { grid-column: span 2; }
-    @media (max-width: 599.98px) { .grid { grid-template-columns: 1fr; } .span2 { grid-column: span 1; } }
-    .margin { margin: 0 0 4px; font-size: 0.9rem; color: var(--ds-ok); }
+        <button mat-icon-button type="button" mat-dialog-close [attr.aria-label]="'common.close' | translate">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+
+      <form [formGroup]="form" (ngSubmit)="save()" novalidate class="fd">
+        <mat-dialog-content class="fd-body">
+          <section class="fd-section">
+            <h3><span class="material-symbols-outlined">label</span>{{ 'products.sectionBasic' | translate }}</h3>
+            <div class="fd-grid">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="span-all">
+                <mat-label>{{ 'products.name' | translate }}</mat-label>
+                <input matInput formControlName="name" cdkFocusInitial [placeholder]="'products.namePlaceholder' | translate" />
+                <mat-error>{{ 'common.required' | translate }}</mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ 'products.nameHindi' | translate }}</mat-label>
+                <input matInput formControlName="nameHindi" placeholder="चीनी" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ 'products.category' | translate }}</mat-label>
+                <input matInput formControlName="category" [matAutocomplete]="cats" />
+                <mat-autocomplete #cats="matAutocomplete">
+                  @for (c of data.categories; track c) {
+                    <mat-option [value]="c">{{ c }}</mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="span-all">
+                <mat-label>{{ 'products.aliases' | translate }}</mat-label>
+                <span matPrefix class="material-symbols-outlined fd-field-icon">record_voice_over</span>
+                <input matInput formControlName="aliases" placeholder="cheeni, shakkar" />
+                <mat-hint>{{ 'products.aliasesHint' | translate }}</mat-hint>
+              </mat-form-field>
+            </div>
+          </section>
+
+          <section class="fd-section">
+            <h3><span class="material-symbols-outlined">sell</span>{{ 'products.sectionPrice' | translate }}</h3>
+            <div class="fd-grid three">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ 'products.purchasePrice' | translate }}</mat-label>
+                <span matTextPrefix>₹&nbsp;</span>
+                <input matInput type="number" inputmode="decimal" formControlName="purchasePrice" min="0" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ 'products.sellingPrice' | translate }}</mat-label>
+                <span matTextPrefix>₹&nbsp;</span>
+                <input matInput type="number" inputmode="decimal" formControlName="sellingPrice" min="0" />
+                <mat-error>{{ 'common.required' | translate }}</mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ 'products.mrp' | translate }}</mat-label>
+                <span matTextPrefix>₹&nbsp;</span>
+                <input matInput type="number" inputmode="decimal" formControlName="mrp" min="0" />
+              </mat-form-field>
+            </div>
+            @if (margin(); as m) {
+              <p class="fd-note" [class.ok]="m.pct >= 0" [class.bad]="m.pct < 0">
+                <span class="material-symbols-outlined">{{ m.pct >= 0 ? 'trending_up' : 'trending_down' }}</span>
+                {{ 'products.marginLine' | translate: { value: m.pct, profit: m.profit } }}
+              </p>
+            }
+          </section>
+
+          <section class="fd-section">
+            <h3><span class="material-symbols-outlined">inventory_2</span>{{ 'products.sectionStock' | translate }}</h3>
+            <div class="fd-grid">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ 'products.unit' | translate }}</mat-label>
+                <mat-select formControlName="unit">
+                  @for (u of units; track u) {
+                    <mat-option [value]="u">{{ ('units.' + u) | translate }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              @if (!data.product) {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>{{ 'products.openingStock' | translate }}</mat-label>
+                  <input matInput type="number" inputmode="decimal" formControlName="openingStock" min="0" />
+                  <span matTextSuffix>{{ ('units.' + form.controls.unit.value) | translate }}</span>
+                </mat-form-field>
+              }
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ 'products.threshold' | translate }}</mat-label>
+                <span matPrefix class="material-symbols-outlined fd-field-icon">notifications</span>
+                <input matInput type="number" inputmode="decimal" formControlName="lowStockThreshold" min="0" />
+                <mat-hint>{{ 'products.thresholdHint' | translate }}</mat-hint>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ 'products.barcode' | translate }}</mat-label>
+                <span matPrefix class="material-symbols-outlined fd-field-icon">barcode_scanner</span>
+                <input matInput formControlName="barcode" />
+              </mat-form-field>
+            </div>
+          </section>
+        </mat-dialog-content>
+
+        <footer class="fd-foot">
+          <button mat-button type="button" mat-dialog-close>{{ 'common.cancel' | translate }}</button>
+          <button mat-flat-button type="submit" class="fd-save" [disabled]="saving()">
+            <span class="material-symbols-outlined">check</span>{{ 'common.save' | translate }}
+          </button>
+        </footer>
+      </form>
+    </div>
   `,
 })
 export class ProductFormDialog {
@@ -135,10 +167,14 @@ export class ProductFormDialog {
     barcode: [this.data.product?.barcode ?? ''],
   });
 
-  protected margin(): number | null {
+  /** Live margin under the prices: percent of the selling price, and rupees per unit. */
+  protected margin(): { pct: number; profit: string } | null {
     const { purchasePrice, sellingPrice } = this.form.getRawValue();
     if (!purchasePrice || !sellingPrice) return null;
-    return Math.round(((sellingPrice - purchasePrice) / sellingPrice) * 1000) / 10;
+    return {
+      pct: Math.round(((sellingPrice - purchasePrice) / sellingPrice) * 1000) / 10,
+      profit: formatPaise(toPaise(sellingPrice) - toPaise(purchasePrice)),
+    };
   }
 
   protected save(): void {

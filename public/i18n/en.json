@@ -196,7 +196,8 @@
     "sale": "Sale",
     "adjustment": "Adjustment",
     "return": "Return",
-    "damage": "Damage"
+    "damage": "Damage",
+    "reversal": "Undone"
   },
   "products": {
     "count": "{{count}} products",
@@ -208,6 +209,12 @@
     "allCategories": "All categories",
     "aliases": "Other names",
     "aliasesHint": "Comma separated, e.g. cheeni, shakkar (helps search and voice)",
+    "formSubtitle": "Name, price and stock details",
+    "sectionBasic": "Basic details",
+    "sectionPrice": "Price",
+    "sectionStock": "Stock",
+    "namePlaceholder": "e.g. Tata Salt 1kg",
+    "marginLine": "Margin {{value}}% · {{profit}} profit per unit",
     "unit": "Unit",
     "threshold": "Low stock alert at",
     "thresholdHint": "Alert when stock falls to this level",
@@ -264,6 +271,11 @@
     "nickname": "Nickname",
     "nicknamePlaceholder": "e.g. Sharma ji",
     "nicknameHint": "Comma separated. Helps search and voice commands.",
+    "formSubtitle": "Their udhaar khata starts at ₹0",
+    "sectionWho": "Who",
+    "sectionContact": "Contact",
+    "sectionUdhaar": "Udhaar",
+    "phoneHint": "10-digit number, for WhatsApp reminders",
     "creditLimit": "Credit limit (optional)",
     "creditLimitHint": "Warn when udhaar goes above this",
     "added": "Customer added",
@@ -407,6 +419,7 @@
     "emptyCart": "Add at least one item",
     "emptyCartHint": "Tap a product, scan a barcode or use the mic to add items",
     "emptyTitle": "No items yet",
+    "addDiscount": "Add discount",
     "speak": "Add items by voice",
     "due": "Due",
     "viewBill": "View bill",
@@ -530,7 +543,17 @@
     "currentPassword": "Current password",
     "newPassword": "New password",
     "passwordChanged": "Password changed successfully",
-    "saved": "Settings saved"
+    "saved": "Settings saved",
+    "voiceAlwaysConfirm": "Always ask before saving",
+    "voiceAlwaysConfirmHint": "Show the confirmation card for every voice command. Turn off to save clear commands straight away (you can still undo).",
+    "voiceThreshold": "Save without asking when the assistant is",
+    "voiceThresholdHint": "Higher means only very clear commands are saved straight away.",
+    "thresholdStrict": "Very sure",
+    "thresholdNormal": "Sure",
+    "thresholdLoose": "Fairly sure",
+    "voiceUndo": "Undo time",
+    "voiceUndoHint": "How long after saving a voice entry can be undone, with the Undo button or by saying “galti ho gayi”.",
+    "seconds": "{{n}} sec"
   },
   "more": {
     "title": "More"
@@ -600,13 +623,15 @@
       "query_balance": "Balance query",
       "query_stock": "Stock query",
       "query_summary": "Sales summary",
-      "unknown": "Not understood"
+      "unknown": "Not understood",
+      "undo_last": "Undo last"
     },
     "status": {
       "confirmed": "Saved",
       "cancelled": "Cancelled",
       "failed": "Failed",
-      "pending": "Not confirmed"
+      "pending": "Not confirmed",
+      "undone": "Undone"
     },
     "ask": {
       "add_credit": "Add {{amount}} udhaar to {{name}}'s account?",
@@ -645,6 +670,15 @@
       "quantity": "Enter the quantity",
       "productName": "Enter the product name",
       "price": "Enter the selling price"
-    }
+    },
+    "undo": "Undo",
+    "undoLong": "Undo this entry",
+    "undoneMsg": "Undone: “{{text}}”"
+  },
+  "aliases": {
+    "title": "Other names (voice & search)",
+    "empty": "No other names yet. They are added when you pick the right name in the voice assistant.",
+    "remove": "Remove {{name}}",
+    "removed": "Removed “{{name}}”"
   }
 }

@@ -37,8 +37,13 @@
       }
       @case ('done') {
         <div class="center">
-          <span class="material-symbols-outlined icon-filled big text-ok">check_circle</span>
+          <span class="material-symbols-outlined icon-filled big" [class.text-ok]="!undone()" [class.text-warn]="undone()">{{ undone() ? 'undo' : 'check_circle' }}</span>
           <p class="answer">{{ message() }}</p>
+          @if (savedLogId(); as logId) {
+            <button type="button" class="undo-btn" (click)="undoSaved()" [disabled]="undoer.busy() === logId">
+              <span class="material-symbols-outlined" aria-hidden="true">undo</span>{{ 'voice.undoLong' | translate }}
+            </button>
+          }
           <div class="flex gap-2 flex-wrap justify-center">
             <button mat-flat-button class="ds-big-btn" (click)="again()"><span class="material-symbols-outlined">mic</span>{{ 'voice.another' | translate }}</button>
             <button mat-stroked-button class="ds-big-btn" (click)="close()">{{ 'common.close' | translate }}</button>

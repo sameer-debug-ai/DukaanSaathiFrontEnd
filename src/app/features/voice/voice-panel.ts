@@ -15,7 +15,9 @@ import { ToastService } from '../../core/services/toast.service';
 import { storage } from '../../core/utils/storage';
 import { VoiceAnswer } from './voice-answer';
 import { VoiceConfirm } from './voice-confirm';
+import { toConfirmedCommand } from './voice-command';
 import { VoiceExecutor, type ConfirmedCommand } from './voice-executor.service';
+import { VoiceUndo } from './voice-undo.service';
 
 type Stage = 'idle' | 'listening' | 'parsing' | 'confirm' | 'saving' | 'done' | 'answer';
 
@@ -29,6 +31,7 @@ const EXAMPLES = [
   'Sharma ji ka kitna udhaar baaki hai?',
   'kya kya khatam hone wala hai?',
   'aaj kitni bikri hui?',
+  'galti ho gayi, pichhla wala hatao',
 ];
 
 const LANG_KEY = 'ds.voiceLang';
@@ -62,6 +65,11 @@ export class VoicePanel implements OnInit, OnDestroy {
   protected readonly speechLang = signal<SpeechLang>((storage.get(LANG_KEY) as SpeechLang) || 'hi-IN');
   protected readonly speakBack = signal(storage.get(SPEAK_KEY) !== '0');
   protected readonly examples = EXAMPLES;
+  protected readonly undoer = inject(VoiceUndo);
+  /** The just-saved voice entry, while it can still be undone from this screen. */
+  protected readonly savedLogId = signal<string | null>(null);
+  protected readonly undone = signal(false);
+  private undoTimer?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
     if (this.data?.text) {
@@ -73,6 +81,7 @@ export class VoicePanel implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.undoTimer);
     this.speech.cancel();
   }
 
@@ -125,7 +134,12 @@ export class VoicePanel implements OnInit, OnDestroy {
     this.api.parse(text, this.lang.current()).subscribe({
       next: (r) => {
         this.result.set(r);
-        if (r.needsConfirmation) {
+        if (r.intent === 'undo_last') {
+          this.undoFromVoice(r);
+        } else if (r.needsConfirmation && r.autoSave) {
+          // Clear command and the shop turned "always ask" off: save now, offer Undo after.
+          this.onConfirm(toConfirmedCommand(r));
+        } else if (r.needsConfirmation) {
           this.stage.set('confirm');
         } else {
           this.message.set(r.answer ?? '');
@@ -147,9 +161,15 @@ export class VoicePanel implements OnInit, OnDestroy {
     this.executor.execute(cmd, r.replyLang).subscribe({
       next: (msg) => {
         this.api.updateLog(r.logId, { status: 'confirmed', resultMessage: msg }).subscribe({ error: () => undefined });
+        this.executor.learn(cmd.learn);
         this.message.set(msg);
+        this.savedLogId.set(r.logId);
+        this.undone.set(false);
         this.stage.set('done');
-        this.toast.success(msg);
+        this.undoer.offer(r.logId, msg);
+        // The in-panel Undo button disappears when the undo window ends.
+        clearTimeout(this.undoTimer);
+        this.undoTimer = setTimeout(() => this.savedLogId.set(null), this.undoer.windowSeconds() * 1000);
         this.say(msg, r.replyLang);
         this.alerts.refresh();
         this.events.changed('any');
@@ -159,6 +179,46 @@ export class VoicePanel implements OnInit, OnDestroy {
         this.api.updateLog(r.logId, { status: 'failed', error: msg }).subscribe({ error: () => undefined });
         this.stage.set('confirm');
         this.toast.error(msg);
+      },
+    });
+  }
+
+  /** Undo button on the "saved" screen. */
+  protected undoSaved(): void {
+    const logId = this.savedLogId();
+    if (!logId) return;
+    this.undoer.undo(logId).subscribe({
+      next: (msg) => {
+        this.savedLogId.set(null);
+        this.undone.set(true);
+        this.message.set(msg);
+        this.say(msg, this.result()?.replyLang);
+      },
+      error: () => undefined,
+    });
+  }
+
+  /** "galti ho gayi" / "undo karo": reverse the last saved voice entry right away. */
+  private undoFromVoice(r: VoiceParseResult): void {
+    const target = r.answerData?.kind === 'undo' ? r.answerData.logId : null;
+    if (!target) {
+      this.message.set(r.answer ?? '');
+      this.stage.set('answer');
+      this.say(r.answer ?? '', r.replyLang);
+      return;
+    }
+    this.stage.set('saving');
+    this.undoer.undo(target).subscribe({
+      next: (msg) => {
+        this.message.set(msg);
+        this.undone.set(true);
+        this.savedLogId.set(null);
+        this.stage.set('done');
+        this.say(msg, r.replyLang);
+      },
+      error: (e) => {
+        this.message.set(apiErrorMessage(e));
+        this.stage.set('answer');
       },
     });
   }

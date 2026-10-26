@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateService } from '@ngx-translate/core';
+import type { Observable } from 'rxjs';
 import { apiErrorMessage } from './api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -18,6 +19,18 @@ export class ToastService {
 
   info(messageOrKey: string, params?: Record<string, unknown>): void {
     this.open(this.t.instant(messageOrKey, params), '', 3000);
+  }
+
+  /** "Saved ✓  [Undo]": emits once if the user taps the action before it closes. */
+  withAction(message: string, actionKey: string, seconds: number): Observable<void> {
+    return this.snack
+      .open(message, this.t.instant(actionKey), {
+        duration: seconds * 1000,
+        panelClass: 'ds-toast-success',
+        horizontalPosition: 'center',
+        verticalPosition: 'bottom',
+      })
+      .onAction();
   }
 
   /** Shows the server's message for a failed request. */

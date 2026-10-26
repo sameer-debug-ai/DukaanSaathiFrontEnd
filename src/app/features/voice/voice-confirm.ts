@@ -10,6 +10,7 @@ import { formatPaise, InrPipe } from '../../shared/pipes/inr.pipe';
 import { formatIstDate } from '../../shared/pipes/ist-date.pipe';
 import { CustomerFormDialog } from '../customers/customer-form-dialog';
 import { SupplierFormDialog } from '../suppliers/supplier-dialogs';
+import type { AliasLearning } from '../../core/services/data.services';
 import type { ConfirmedCommand } from './voice-executor.service';
 
 interface EditableItem {
@@ -269,7 +270,33 @@ export class VoiceConfirm implements OnInit {
       paymentMode: this.mode(),
       date: this.date() ? dayToIso(this.date()) : undefined,
       items: this.items().map((i) => ({ productId: i.productId, name: i.productName ?? i.name, qty: i.qty, unit: i.unit, rate: i.rate })),
+      logId: r.logId,
+      learn: this.learnedAliases(),
     });
+  }
+
+  /**
+   * Spoken names the user resolved by hand: a pick among several candidates, or an unknown
+   * name linked to an existing record. Saved as aliases so next time they match directly.
+   */
+  private learnedAliases(): AliasLearning[] {
+    const out: AliasLearning[] = [];
+    const learnPick = (kind: AliasLearning['kind'], p: Picked) => {
+      const spoken = p.match?.query?.trim();
+      if (!p.id || !spoken) return;
+      if (p.match?.status === 'matched' && p.match.best?.id === p.id) return; // understood already
+      out.push({ kind, id: p.id, alias: spoken });
+    };
+    learnPick('customer', this.customer());
+    learnPick('supplier', this.supplier());
+    if (this.intent() !== 'add_product') learnPick('product', this.product());
+    const original = new Map(this.result().items.map((i) => [i.spokenName, i.match]));
+    for (const item of this.items()) {
+      const m = original.get(item.name);
+      if (!item.productId || !m || (m.status === 'matched' && m.best?.id === item.productId)) continue;
+      out.push({ kind: 'product', id: item.productId, alias: item.name });
+    }
+    return out;
   }
 
   protected readonly formatPaise = formatPaise;

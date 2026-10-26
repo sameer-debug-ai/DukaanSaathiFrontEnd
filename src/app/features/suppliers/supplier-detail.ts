@@ -8,6 +8,7 @@ import type { Purchase, Supplier, SupplierHistoryRow } from '../../core/models/d
 import { AppEvents } from '../../core/services/app-events.service';
 import { SuppliersApi } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
+import { AliasChips } from '../../shared/components/alias-chips/alias-chips';
 import { ConfirmService } from '../../shared/components/confirm-dialog/confirm-dialog';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { PageHeader } from '../../shared/components/page-header/page-header';
@@ -19,7 +20,7 @@ import { SupplierFormDialog, SupplierPaymentDialog } from './supplier-dialogs';
 
 @Component({
   selector: 'app-supplier-detail',
-  imports: [RouterLink, MatButton, MatIconButton, MatMenuModule, TranslatePipe, PageHeader, Skeleton, EmptyState, StatCard, InrPipe, IstDatePipe],
+  imports: [RouterLink, MatButton, MatIconButton, MatMenuModule, TranslatePipe, PageHeader, Skeleton, EmptyState, StatCard, InrPipe, IstDatePipe, AliasChips],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="ds-page">
@@ -45,6 +46,10 @@ import { SupplierFormDialog, SupplierPaymentDialog } from './supplier-dialogs';
         <div class="flex gap-3 flex-wrap mb-4">
           <a mat-flat-button class="ds-big-btn" routerLink="/purchases/new" [queryParams]="{ supplierId: s.id }"><span class="material-symbols-outlined">add_shopping_cart</span>{{ 'suppliers.newPurchase' | translate }}</a>
           <button mat-stroked-button class="ds-big-btn" (click)="pay(s)"><span class="material-symbols-outlined">payments</span>{{ 'suppliers.recordPayment' | translate }}</button>
+        </div>
+
+        <div class="ds-card p-4 mb-4">
+          <app-alias-chips [aliases]="s.aliases" [busy]="aliasBusy()" (remove)="removeAlias(s, $event)" />
         </div>
 
         <div class="ds-card overflow-hidden">
@@ -122,6 +127,24 @@ export class SupplierDetail {
           error: (e) => this.toast.apiError(e),
         }),
       );
+    });
+  }
+
+  protected readonly aliasBusy = signal(false);
+
+  /** Drops one learned/typed name (voice stops matching on it). */
+  protected removeAlias(s: Supplier, alias: string): void {
+    this.aliasBusy.set(true);
+    this.api.update(s.id, { aliases: s.aliases.filter((a) => a !== alias) }).subscribe({
+      next: (u) => {
+        this.aliasBusy.set(false);
+        this.supplier.set({ ...s, aliases: u.aliases });
+        this.toast.success('aliases.removed', { name: alias });
+      },
+      error: (e) => {
+        this.aliasBusy.set(false);
+        this.toast.apiError(e);
+      },
     });
   }
 

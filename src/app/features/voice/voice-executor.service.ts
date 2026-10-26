@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { TranslateLoader, TranslateService, type Language, type TranslationObject } from '@ngx-translate/core';
 import { Observable, catchError, map, of, shareReplay, switchMap, throwError } from 'rxjs';
 import type { Unit, VoiceParseResult } from '../../core/models/domain.models';
-import { CustomersApi, ProductsApi, SalesApi, SuppliersApi } from '../../core/services/data.services';
+import { CustomersApi, ProductsApi, SalesApi, SuppliersApi, VoiceApi, type AliasLearning } from '../../core/services/data.services';
 import { formatPaise } from '../../shared/pipes/inr.pipe';
 
 /** What the confirmation card hands over after the user has reviewed / edited it. */
@@ -25,6 +25,10 @@ export interface ConfirmedCommand {
   paymentMode: 'cash' | 'upi' | 'udhaar' | 'bank' | null;
   date?: string;
   items: { productId?: string; name: string; qty: number; unit: string | null; rate: number | null }[];
+  /** The voice log this command came from; sent with every save so it can be undone. */
+  logId?: string;
+  /** Spoken names to remember for the records the user picked (see VoiceApi.learnAliases). */
+  learn?: AliasLearning[];
 }
 
 /**
@@ -37,6 +41,7 @@ export class VoiceExecutor {
   private readonly suppliers = inject(SuppliersApi);
   private readonly products = inject(ProductsApi);
   private readonly sales = inject(SalesApi);
+  private readonly voice = inject(VoiceApi);
   private readonly t = inject(TranslateService);
   private readonly loader = inject(TranslateLoader);
   private readonly dictionaries = new Map<Language, Observable<TranslationObject>>();
@@ -49,7 +54,7 @@ export class VoiceExecutor {
     // A new person taking udhaar: add them to the khata, then book the udhaar against them.
     if (!c.customerId && c.newCustomerName?.trim()) {
       return this.customers
-        .create({ name: c.newCustomerName.trim() })
+        .create({ name: c.newCustomerName.trim(), voiceLogId: c.logId })
         .pipe(switchMap((cust) => this.execute({ ...c, customerId: cust.id, customerName: cust.name, newCustomerName: undefined }, lang)));
     }
     const amount = (n: number | null) => formatPaise(n ?? 0);
@@ -67,6 +72,7 @@ export class VoiceExecutor {
               paymentMode: 'udhaar',
               date: c.date,
               source: 'voice',
+            voiceLogId: c.logId,
             })
             .pipe(switchMap((s) => this.done(lang, 'voice.done.credit', { amount: amount(s.totalAmount), name: c.customerName })));
         }
@@ -78,6 +84,7 @@ export class VoiceExecutor {
             note: this.t.instant('voice.noteVoice'),
             date: c.date,
             source: 'voice',
+            voiceLogId: c.logId,
             rawVoiceText: c.text,
           })
           .pipe(switchMap(() => this.done(lang, 'voice.done.credit', { amount: amount(c.amount), name: c.customerName })));
@@ -92,6 +99,7 @@ export class VoiceExecutor {
             note: this.t.instant('voice.noteVoice'),
             date: c.date,
             source: 'voice',
+            voiceLogId: c.logId,
             rawVoiceText: c.text,
           })
           .pipe(switchMap(() => this.done(lang, 'voice.done.payment', { amount: amount(c.amount), name: c.customerName })));
@@ -106,14 +114,14 @@ export class VoiceExecutor {
         );
         const total = items.reduce((s, i) => s + Math.round(i.qty * i.rate), 0);
         return this.suppliers
-          .createPurchase({ supplierId: c.supplierId, items, paidAmount: Math.min(c.paidAmount ?? 0, total), date: c.date, source: 'voice', note: this.t.instant('voice.noteVoice') })
+          .createPurchase({ supplierId: c.supplierId, items, paidAmount: Math.min(c.paidAmount ?? 0, total), date: c.date, source: 'voice', note: this.t.instant('voice.noteVoice'), voiceLogId: c.logId })
           .pipe(switchMap((p) => this.done(lang, 'voice.done.purchase', { amount: amount(p.totalAmount), name: c.supplierName })));
       }
       case 'supplier_payment':
         if (!c.supplierId) return this.fail('voice.err.supplier');
         if (!c.amount) return this.fail('voice.err.amount');
         return this.suppliers
-          .pay({ supplierId: c.supplierId, amount: c.amount, mode: c.paymentMode === 'upi' || c.paymentMode === 'bank' ? c.paymentMode : 'cash', date: c.date, source: 'voice', note: this.t.instant('voice.noteVoice') })
+          .pay({ supplierId: c.supplierId, amount: c.amount, mode: c.paymentMode === 'upi' || c.paymentMode === 'bank' ? c.paymentMode : 'cash', date: c.date, source: 'voice', note: this.t.instant('voice.noteVoice'), voiceLogId: c.logId })
           .pipe(switchMap(() => this.done(lang, 'voice.done.supplierPayment', { amount: amount(c.amount), name: c.supplierName })));
       case 'add_sale': {
         if (!c.items.length || c.items.some((i) => !i.productId)) return this.fail('voice.err.products');
@@ -127,6 +135,7 @@ export class VoiceExecutor {
             paymentMode: mode,
             date: c.date,
             source: 'voice',
+            voiceLogId: c.logId,
           })
           .pipe(switchMap((s) => this.done(lang, 'voice.done.sale', { number: s.billNumber, amount: amount(s.totalAmount) })));
       }
@@ -134,17 +143,23 @@ export class VoiceExecutor {
         if (!c.productId) return this.fail('voice.err.product');
         if (!c.quantity) return this.fail('voice.err.quantity');
         return this.products
-          .adjustStock({ productId: c.productId, quantity: c.quantity, type: 'adjustment', note: this.t.instant('voice.noteVoice') })
+          .adjustStock({ productId: c.productId, quantity: c.quantity, type: 'adjustment', note: this.t.instant('voice.noteVoice'), voiceLogId: c.logId })
           .pipe(switchMap((p) => this.done(lang, 'voice.done.stock', { name: p.name, qty: p.currentStock, unit: p.unit })));
       case 'add_product':
         if (!c.productName) return this.fail('voice.err.productName');
         if (!c.sellingPrice) return this.fail('voice.err.price');
         return this.products
-          .create({ name: c.productName, sellingPrice: c.sellingPrice, purchasePrice: 0, unit: c.unit ?? 'piece' })
+          .create({ name: c.productName, sellingPrice: c.sellingPrice, purchasePrice: 0, unit: c.unit ?? 'piece', voiceLogId: c.logId })
           .pipe(switchMap((p) => this.done(lang, 'voice.done.product', { name: p.name, amount: amount(p.sellingPrice) })));
       default:
         return of('');
     }
+  }
+
+  /** Remembers the spoken names the user confirmed. Best effort: a failure never affects the saved entry. */
+  learn(items: AliasLearning[] | undefined): void {
+    const useful = (items ?? []).filter((i) => i.alias.trim() && i.id);
+    if (useful.length) this.voice.learnAliases(useful.slice(0, 20)).subscribe({ error: () => undefined });
   }
 
   /** Translates `key` in a given language without switching the whole app to it. */

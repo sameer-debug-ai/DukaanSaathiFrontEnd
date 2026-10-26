@@ -25,7 +25,8 @@ export interface Product {
   updatedAt: string;
 }
 
-export type MovementType = 'purchase' | 'sale' | 'adjustment' | 'return' | 'damage';
+/** 'reversal' = a voice entry was undone and its stock put back. */
+export type MovementType = 'purchase' | 'sale' | 'adjustment' | 'return' | 'damage' | 'reversal';
 
 export interface StockMovement {
   id: string;
@@ -237,6 +238,7 @@ export type Intent =
   | 'query_balance'
   | 'query_stock'
   | 'query_summary'
+  | 'undo_last'
   | 'unknown';
 
 export interface Candidate {
@@ -298,6 +300,10 @@ export interface VoiceParseResult {
   answerData?: VoiceAnswerData;
   needsConfirmation: boolean;
   missing: string[];
+  /** 0-1: parser confidence x the weakest name match. */
+  autoSaveConfidence?: number;
+  /** Clear enough (and the shop allows it): save without the confirmation card. */
+  autoSave?: boolean;
 }
 
 export interface VoiceStockRow {
@@ -315,13 +321,14 @@ export type VoiceAnswerData =
   | { kind: 'stock_item'; productId: string; name: string; stock: number; unit: string; status: StockStatus; lowStockThreshold: number }
   | { kind: 'balance'; customerId: string; name: string; balance: number }
   | { kind: 'summary'; period: string; from: string; to: string; sales: number; bills: number; udhaarGiven: number; paymentsReceived: number }
-  | { kind: 'choose'; choose: Candidate[] };
+  | { kind: 'choose'; choose: Candidate[] }
+  | { kind: 'undo'; logId: string | null; text: string };
 
 export interface VoiceLog {
   id: string;
   rawText: string;
   intent: Intent;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'failed';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'failed' | 'undone';
   engine: string;
   resultMessage: string;
   error?: string;

@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef, inject, Injector, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -75,6 +75,12 @@ export class Billing implements OnInit {
   protected readonly paid = signal<number | null>(null);
   protected readonly saving = signal(false);
   protected readonly showCart = signal(false);
+  protected readonly showDiscount = signal(false);
+  /** Product id of the line just added; highlighted briefly. */
+  protected readonly lastAdded = signal<string | null>(null);
+  private flashTimer?: ReturnType<typeof setTimeout>;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
 
   protected readonly categories = computed(() => [...new Set(this.products().map((p) => p.category))].sort());
   protected readonly visible = computed(() => {
@@ -120,6 +126,21 @@ export class Billing implements OnInit {
       return [...lines, { product: p, qty: step, rate: p.sellingPrice }];
     });
     if (p.currentStock <= 0) this.toast.info('billing.outOfStockWarn', { name: p.name });
+    this.revealLine(p.id);
+  }
+
+  /** Scrolls the bill to the item just tapped and flashes it, so it never lands out of sight. */
+  private revealLine(productId: string): void {
+    this.lastAdded.set(productId);
+    clearTimeout(this.flashTimer);
+    this.flashTimer = setTimeout(() => this.lastAdded.set(null), 900);
+    afterNextRender(
+      () => {
+        const row = this.host.nativeElement.querySelector<HTMLElement>(`.lines [data-line="${productId}"]`);
+        row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      },
+      { injector: this.injector },
+    );
   }
 
   /** Enter in the search box: exact barcode match or the only result gets added. */
@@ -155,6 +176,7 @@ export class Billing implements OnInit {
   protected clear(): void {
     this.cart.set([]);
     this.discount.set(null);
+    this.showDiscount.set(false);
     this.paid.set(null);
     this.customer.set(null);
     this.customerQuery.set('');

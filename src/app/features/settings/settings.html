@@ -78,6 +78,39 @@
         <p class="text-sm text-muted mb-0">{{ 'settings.aiOffHint' | translate }}</p>
       }
     }
+
+    <form [formGroup]="voiceForm" (ngSubmit)="saveVoice()" class="mt-4">
+      <div class="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <div class="font-medium">{{ 'settings.voiceAlwaysConfirm' | translate }}</div>
+          <div class="text-sm text-muted">{{ 'settings.voiceAlwaysConfirmHint' | translate }}</div>
+        </div>
+        <mat-slide-toggle formControlName="voiceAlwaysConfirm" [attr.aria-label]="'settings.voiceAlwaysConfirm' | translate" />
+      </div>
+
+      @if (!voiceForm.controls.voiceAlwaysConfirm.value) {
+        <div class="mb-4">
+          <div class="font-medium">{{ 'settings.voiceThreshold' | translate }}</div>
+          <div class="text-sm text-muted mb-2">{{ 'settings.voiceThresholdHint' | translate }}</div>
+          <mat-button-toggle-group formControlName="voiceAutoSaveThreshold" [attr.aria-label]="'settings.voiceThreshold' | translate">
+            <mat-button-toggle [value]="0.95">{{ 'settings.thresholdStrict' | translate }}</mat-button-toggle>
+            <mat-button-toggle [value]="0.85">{{ 'settings.thresholdNormal' | translate }}</mat-button-toggle>
+            <mat-button-toggle [value]="0.75">{{ 'settings.thresholdLoose' | translate }}</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+      }
+
+      <div class="mb-4">
+        <div class="font-medium">{{ 'settings.voiceUndo' | translate }}</div>
+        <div class="text-sm text-muted mb-2">{{ 'settings.voiceUndoHint' | translate }}</div>
+        <mat-button-toggle-group formControlName="voiceUndoSeconds" [attr.aria-label]="'settings.voiceUndo' | translate">
+          @for (s of undoChoices; track s) {
+            <mat-button-toggle [value]="s">{{ 'settings.seconds' | translate: { n: s } }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+      <button mat-flat-button type="submit">{{ 'common.save' | translate }}</button>
+    </form>
   </div>
 
   <!-- Data -->

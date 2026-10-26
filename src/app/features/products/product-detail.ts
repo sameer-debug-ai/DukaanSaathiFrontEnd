@@ -7,6 +7,7 @@ import type { Product, StockMovement } from '../../core/models/domain.models';
 import { AppEvents, StockAlertsService } from '../../core/services/app-events.service';
 import { ProductsApi } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
+import { AliasChips } from '../../shared/components/alias-chips/alias-chips';
 import { ConfirmService } from '../../shared/components/confirm-dialog/confirm-dialog';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { PageHeader } from '../../shared/components/page-header/page-header';
@@ -23,11 +24,12 @@ const MOVE_STYLE: Record<StockMovement['type'], { icon: string; cls: string }> =
   adjustment: { icon: 'tune', cls: 'muted' },
   return: { icon: 'undo', cls: 'ok' },
   damage: { icon: 'broken_image', cls: 'danger' },
+  reversal: { icon: 'undo', cls: 'muted' },
 };
 
 @Component({
   selector: 'app-product-detail',
-  imports: [RouterLink, MatButton, TranslatePipe, PageHeader, Skeleton, EmptyState, StockBadge, InrPipe, IstDatePipe],
+  imports: [RouterLink, MatButton, TranslatePipe, PageHeader, Skeleton, EmptyState, StockBadge, InrPipe, IstDatePipe, AliasChips],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="ds-page">
@@ -54,7 +56,6 @@ const MOVE_STYLE: Record<StockMovement['type'], { icon: string; cls: string }> =
           </div>
           <div class="ds-card p-4">
             <dl class="facts">
-              <dt>{{ 'products.aliases' | translate }}</dt><dd>{{ p.aliases.join(', ') || '—' }}</dd>
               <dt>{{ 'products.barcode' | translate }}</dt><dd>{{ p.barcode || '—' }}</dd>
             </dl>
             <div class="flex gap-2 mt-3 flex-wrap">
@@ -62,6 +63,10 @@ const MOVE_STYLE: Record<StockMovement['type'], { icon: string; cls: string }> =
               <button mat-button class="text-danger" (click)="remove(p)">{{ 'common.delete' | translate }}</button>
             </div>
           </div>
+        </div>
+
+        <div class="ds-card p-4 mb-4">
+          <app-alias-chips [aliases]="p.aliases" [busy]="aliasBusy()" (remove)="removeAlias(p, $event)" />
         </div>
 
         <div class="ds-card overflow-hidden">
@@ -127,6 +132,24 @@ export class ProductDetail {
   private load(id: string): void {
     this.api.get(id).subscribe({ next: (p) => this.product.set(p), error: (e) => this.toast.apiError(e) });
     this.loadHistory(1);
+  }
+
+  protected readonly aliasBusy = signal(false);
+
+  /** Drops one learned/typed name (search and voice stop matching on it). */
+  protected removeAlias(p: Product, alias: string): void {
+    this.aliasBusy.set(true);
+    this.api.update(p.id, { aliases: p.aliases.filter((a) => a !== alias) }).subscribe({
+      next: (u) => {
+        this.aliasBusy.set(false);
+        this.product.set({ ...p, aliases: u.aliases });
+        this.toast.success('aliases.removed', { name: alias });
+      },
+      error: (e) => {
+        this.aliasBusy.set(false);
+        this.toast.apiError(e);
+      },
+    });
   }
 
   protected loadHistory(page: number): void {

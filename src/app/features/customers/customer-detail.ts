@@ -14,6 +14,7 @@ import { ShareService } from '../../core/services/share.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmService } from '../../shared/components/confirm-dialog/confirm-dialog';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
+import { AliasChips } from '../../shared/components/alias-chips/alias-chips';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { Skeleton } from '../../shared/components/skeleton/skeleton';
 import { InrPipe } from '../../shared/pipes/inr.pipe';
@@ -24,7 +25,7 @@ import { reminderMessage } from './reminder';
 
 @Component({
   selector: 'app-customer-detail',
-  imports: [RouterLink, MatButton, MatIconButton, MatMenuModule, TranslatePipe, PageHeader, Skeleton, EmptyState, InrPipe, IstDatePipe],
+  imports: [RouterLink, MatButton, MatIconButton, MatMenuModule, TranslatePipe, PageHeader, Skeleton, EmptyState, InrPipe, IstDatePipe, AliasChips],
   templateUrl: './customer-detail.html',
   styleUrl: './customer-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,6 +61,26 @@ export class CustomerDetailPage {
   private load(id: string): void {
     this.api.get(id).subscribe({ next: (c) => this.customer.set(c), error: (e) => this.toast.apiError(e) });
     this.api.ledger(id).subscribe({ next: (l) => this.ledger.set(l), error: (e) => this.toast.apiError(e) });
+  }
+
+  protected readonly aliasBusy = signal(false);
+
+  /** Drops one learned/typed nickname (voice will stop matching on it). */
+  protected removeAlias(alias: string): void {
+    const c = this.customer();
+    if (!c) return;
+    this.aliasBusy.set(true);
+    this.api.update(c.id, { aliases: c.aliases.filter((a) => a !== alias) }).subscribe({
+      next: (u) => {
+        this.aliasBusy.set(false);
+        this.customer.set({ ...c, aliases: u.aliases });
+        this.toast.success('aliases.removed', { name: alias });
+      },
+      error: (e) => {
+        this.aliasBusy.set(false);
+        this.toast.apiError(e);
+      },
+    });
   }
 
   protected entry(type: 'credit' | 'payment'): void {

@@ -24,6 +24,12 @@ export interface ShopSettings {
   lowStockDefault: number;
   allowOversell: boolean;
   darkMode: boolean;
+  /** "Hamesha save se pehle poochho": always show the voice confirmation card. */
+  voiceAlwaysConfirm?: boolean;
+  /** Auto-save voice commands at or above this confidence (0-1). */
+  voiceAutoSaveThreshold?: number;
+  /** Seconds a saved voice entry can be undone. */
+  voiceUndoSeconds?: number;
 }
 
 export interface User {

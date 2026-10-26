@@ -51,6 +51,10 @@
       }
     </div>
 
+    <div class="ds-card p-4 mt-4">
+      <app-alias-chips [aliases]="c.aliases" [busy]="aliasBusy()" (remove)="removeAlias($event)" />
+    </div>
+
     <div class="ds-card overflow-hidden mt-4">
       <div class="ds-section-title">
         <h2>{{ 'ledger.title' | translate }}</h2>
