@@ -5,6 +5,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ChartConfiguration } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
 import { forkJoin } from 'rxjs';
+import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth/auth.service';
 import type { DashboardCharts, DashboardSummary, RecentTxn } from '../../core/models/domain.models';
 import { AppEvents, StockAlertsService } from '../../core/services/app-events.service';
@@ -52,6 +53,8 @@ export class Dashboard {
   protected readonly loading = signal(true);
   protected readonly isEmptyShop = signal(false);
   protected readonly loadingSample = signal(false);
+  /** Demo data is for trying the app locally; a live shop starts clean. */
+  protected readonly canLoadSample = !environment.production;
   protected readonly today = formatIstDate(new Date());
   protected readonly txnIcon = TXN_ICON;
 

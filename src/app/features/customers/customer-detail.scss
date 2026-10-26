@@ -54,6 +54,27 @@
 @media (max-width: 599.98px) {
   .actions {
     max-width: none;
+    // Two buttons per row on a phone: keep each label on one line ("Add udhaar", not "Add / udhaar").
+    .ds-big-btn {
+      padding: 0 8px;
+      font-size: 0.86rem !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      .material-symbols-outlined {
+        margin-right: 4px;
+        font-size: 18px;
+      }
+    }
+  }
+  .label-full {
+    display: none;
+  }
+}
+.label-short {
+  display: none;
+  @media (max-width: 599.98px) {
+    display: inline;
   }
 }
 .btn-credit {

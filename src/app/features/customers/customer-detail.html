@@ -38,7 +38,9 @@
           <span class="material-symbols-outlined">payments</span>{{ 'ledger.receive' | translate }}
         </button>
         <a mat-stroked-button class="ds-big-btn" [href]="remindUrl()" target="_blank" rel="noopener" [class.disabled]="c.currentBalance <= 0">
-          <span class="material-symbols-outlined">chat</span>{{ 'customers.remind' | translate }}
+          <span class="material-symbols-outlined">chat</span>
+          <span class="label-full">{{ 'customers.remind' | translate }}</span>
+          <span class="label-short">{{ 'customers.remindShort' | translate }}</span>
         </a>
         <button mat-stroked-button class="ds-big-btn" (click)="statement()" [disabled]="pdfBusy()">
           <span class="material-symbols-outlined">picture_as_pdf</span>{{ 'customers.statementShort' | translate }}

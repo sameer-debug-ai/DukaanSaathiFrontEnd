@@ -292,6 +292,7 @@
     "totalPaid": "Total paid",
     "limit": "Limit",
     "remind": "WhatsApp reminder",
+    "remindShort": "Remind",
     "statement": "Download statement (PDF)",
     "statementShort": "Statement PDF",
     "noPhoneHint": "Add a phone number to send WhatsApp reminders directly."

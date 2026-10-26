@@ -292,6 +292,7 @@
     "totalPaid": "कुल जमा",
     "limit": "सीमा",
     "remind": "WhatsApp याद दिलाएँ",
+    "remindShort": "याद दिलाएँ",
     "statement": "खाता विवरण (PDF) डाउनलोड करें",
     "statementShort": "खाता PDF",
     "noPhoneHint": "WhatsApp से याद दिलाने के लिए फ़ोन नंबर जोड़ें।"

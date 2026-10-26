@@ -14,10 +14,12 @@
     <div class="ds-card empty-banner">
       <app-empty-state icon="storefront" [title]="'dashboard.emptyTitle' | translate" [hint]="'dashboard.emptyHint' | translate">
         <div class="flex flex-wrap gap-2 justify-center">
-          <button mat-flat-button class="ds-big-btn" (click)="loadSample()" [disabled]="loadingSample()">
-            <span class="material-symbols-outlined">auto_awesome</span>
-            {{ (loadingSample() ? 'common.loading' : 'dashboard.loadSample') | translate }}
-          </button>
+          @if (canLoadSample) {
+            <button mat-flat-button class="ds-big-btn" (click)="loadSample()" [disabled]="loadingSample()">
+              <span class="material-symbols-outlined">auto_awesome</span>
+              {{ (loadingSample() ? 'common.loading' : 'dashboard.loadSample') | translate }}
+            </button>
+          }
           <a mat-stroked-button class="ds-big-btn" routerLink="/products" [queryParams]="{ add: 1 }">{{ 'dashboard.addFirstProduct' | translate }}</a>
         </div>
       </app-empty-state>
