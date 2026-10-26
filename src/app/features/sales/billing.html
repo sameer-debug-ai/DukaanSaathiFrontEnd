@@ -1,53 +1,91 @@
 <section class="ds-page billing">
-  <app-page-header [title]="'billing.title' | translate" [subtitle]="'billing.subtitle' | translate" />
-
   <div class="layout">
-    <!-- Product picker -->
+    <!-- ============ Product picker ============ -->
     <div class="picker">
-      <label class="search">
-        <span class="material-symbols-outlined">search</span>
-        <input
-          type="search"
-          [placeholder]="'billing.searchPlaceholder' | translate"
-          [ngModel]="query()"
-          (ngModelChange)="query.set($event)"
-          (keydown.enter)="onEnter()"
-          autocomplete="off"
-          [attr.aria-label]="'billing.searchPlaceholder' | translate"
-        />
-        <span class="material-symbols-outlined scan" [title]="'billing.scanHint' | translate">barcode_scanner</span>
-      </label>
-      <div class="ds-chips my-3">
-        <button class="ds-chip" [class.active]="!category()" (click)="category.set('')">{{ 'products.filterAll' | translate }}</button>
+      <header class="top">
+        <div>
+          <h1>{{ 'billing.title' | translate }}</h1>
+          <p>{{ 'billing.subtitle' | translate }}</p>
+        </div>
+      </header>
+
+      <div class="search-row">
+        <label class="search">
+          <span class="material-symbols-outlined" aria-hidden="true">search</span>
+          <input
+            type="search"
+            [placeholder]="'billing.searchPlaceholder' | translate"
+            [ngModel]="query()"
+            (ngModelChange)="query.set($event)"
+            (keydown.enter)="onEnter()"
+            autocomplete="off"
+            [attr.aria-label]="'billing.searchPlaceholder' | translate"
+          />
+          @if (query()) {
+            <button type="button" class="clear-q" (click)="query.set('')" [attr.aria-label]="'billing.clear' | translate">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          } @else {
+            <span class="material-symbols-outlined scan" [title]="'billing.scanHint' | translate" aria-hidden="true">barcode_scanner</span>
+          }
+        </label>
+        <button type="button" class="voice-btn" (click)="voice.open()" [title]="'billing.speak' | translate" [attr.aria-label]="'billing.speak' | translate">
+          <span class="material-symbols-outlined icon-filled">mic</span>
+        </button>
+      </div>
+
+      <div class="cats" role="tablist">
+        <button type="button" class="cat" [class.active]="!category()" (click)="category.set('')">{{ 'products.filterAll' | translate }}</button>
         @for (c of categories(); track c) {
-          <button class="ds-chip" [class.active]="category() === c" (click)="category.set(c)">{{ c }}</button>
+          <button type="button" class="cat" [class.active]="category() === c" (click)="category.set(c)">{{ c }}</button>
         }
       </div>
+
       <div class="tiles">
         @for (p of visible(); track p.id) {
-          <button type="button" class="tile" (click)="add(p)" [class.out]="p.currentStock <= 0">
+          @let inCart = cartQty().get(p.id);
+          <button type="button" class="tile" (click)="add(p)" [class.out]="p.currentStock <= 0" [class.picked]="!!inCart">
+            @if (inCart) {
+              <span class="bubble">{{ inCart }}</span>
+            }
+            <span class="avatar" [style.background]="tint(p.category).bg" [style.color]="tint(p.category).fg">{{ p.name.charAt(0) }}</span>
             <span class="name">{{ p.name }}</span>
-            <span class="price">{{ p.sellingPrice | inr }}<small>/{{ p.unit }}</small></span>
-            <span class="stock" [class.text-danger]="p.currentStock <= 0" [class.text-warn]="p.stockStatus === 'low'">
-              {{ p.currentStock <= 0 ? ('stock.out' | translate) : p.currentStock + ' ' + p.unit }}
+            <span class="foot">
+              <span class="price">{{ p.sellingPrice | inr }}<small>/{{ p.unit }}</small></span>
+              <span class="stock" [class.out]="p.currentStock <= 0" [class.low]="p.currentStock > 0 && p.stockStatus === 'low'">
+                {{ p.currentStock <= 0 ? ('stock.out' | translate) : p.currentStock + ' ' + p.unit }}
+              </span>
             </span>
           </button>
         } @empty {
-          <p class="text-muted col-span-full text-center py-6">{{ 'billing.noProducts' | translate }}</p>
+          <div class="no-results">
+            <span class="material-symbols-outlined" aria-hidden="true">search_off</span>
+            <p>{{ 'billing.noProducts' | translate }}</p>
+          </div>
         }
       </div>
     </div>
 
-    <!-- Cart -->
-    <aside class="cart ds-card" [class.open]="showCart()">
-      <div class="cart-head">
-        <h2>{{ 'billing.cart' | translate }} ({{ cart().length }})</h2>
-        <div class="flex gap-1">
+    <!-- ============ Bill ============ -->
+    @if (showCart()) {
+      <div class="backdrop" (click)="showCart.set(false)" aria-hidden="true"></div>
+    }
+    <aside class="bill" [class.open]="showCart()" [attr.aria-label]="'billing.cart' | translate">
+      <div class="bill-head">
+        <span class="grip" aria-hidden="true"></span>
+        <div class="title">
+          <span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>
+          <h2>{{ 'billing.cart' | translate }}</h2>
           @if (cart().length) {
-            <button mat-button (click)="clear()">{{ 'billing.clear' | translate }}</button>
+            <span class="count">{{ cart().length }}</span>
           }
-          <button mat-icon-button class="md:!hidden" (click)="showCart.set(false)" [attr.aria-label]="'common.close' | translate">
-            <span class="material-symbols-outlined">expand_more</span>
+        </div>
+        <div class="actions">
+          @if (cart().length) {
+            <button type="button" class="link danger" (click)="clear()">{{ 'billing.clear' | translate }}</button>
+          }
+          <button type="button" class="icon close-sheet" (click)="showCart.set(false)" [attr.aria-label]="'common.close' | translate">
+            <span class="material-symbols-outlined">close</span>
           </button>
         </div>
       </div>
@@ -55,96 +93,127 @@
       <div class="lines">
         @for (l of cart(); track l.product.id) {
           <div class="line">
-            <div class="flex-1 min-w-0">
-              <div class="font-semibold truncate">{{ l.product.name }}</div>
-              <div class="rate">
-                ₹<input type="number" inputmode="decimal" [ngModel]="l.rate / 100" (ngModelChange)="setRate(l, $event)" [attr.aria-label]="'purchases.rate' | translate" />/{{ l.product.unit }}
+            <div class="l-top">
+              <span class="l-name">{{ l.product.name }}</span>
+              <span class="l-total">{{ l.qty * l.rate | inr }}</span>
+            </div>
+            <div class="l-bottom">
+              <label class="rate">
+                ₹<input type="number" inputmode="decimal" [ngModel]="l.rate / 100" (ngModelChange)="setRate(l, $event)" [attr.aria-label]="'purchases.rate' | translate" />
+                <span>/{{ l.product.unit }}</span>
+              </label>
+              <div class="stepper">
+                <button type="button" (click)="step(l, -1)" [attr.aria-label]="'billing.less' | translate">
+                  <span class="material-symbols-outlined">{{ l.qty <= 1 ? 'delete' : 'remove' }}</span>
+                </button>
+                <input type="number" inputmode="decimal" [ngModel]="l.qty" (ngModelChange)="setQty(l, $event)" [attr.aria-label]="'common.qty' | translate" />
+                <button type="button" (click)="step(l, 1)" [attr.aria-label]="'billing.more' | translate">
+                  <span class="material-symbols-outlined">add</span>
+                </button>
               </div>
-              @if (l.qty > l.product.currentStock) {
-                <div class="text-xs text-danger">{{ 'billing.onlyLeft' | translate: { qty: l.product.currentStock, unit: l.product.unit } }}</div>
-              }
             </div>
-            <div class="stepper">
-              <button type="button" (click)="step(l, -1)" [attr.aria-label]="'billing.less' | translate"><span class="material-symbols-outlined">remove</span></button>
-              <input type="number" inputmode="decimal" [ngModel]="l.qty" (ngModelChange)="setQty(l, $event)" [attr.aria-label]="'common.qty' | translate" />
-              <button type="button" (click)="step(l, 1)" [attr.aria-label]="'billing.more' | translate"><span class="material-symbols-outlined">add</span></button>
-            </div>
-            <div class="line-total">{{ l.qty * l.rate | inr }}</div>
+            @if (l.qty > l.product.currentStock) {
+              <div class="l-warn">
+                <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+                {{ 'billing.onlyLeft' | translate: { qty: l.product.currentStock, unit: l.product.unit } }}
+              </div>
+            }
           </div>
         } @empty {
           <div class="empty">
-            <span class="material-symbols-outlined">shopping_basket</span>
-            <p>{{ 'billing.emptyCartHint' | translate }}</p>
+            <span class="empty-icon"><span class="material-symbols-outlined" aria-hidden="true">shopping_basket</span></span>
+            <p class="e-title">{{ 'billing.emptyTitle' | translate }}</p>
+            <p class="e-hint">{{ 'billing.emptyCartHint' | translate }}</p>
           </div>
         }
       </div>
 
       @if (cart().length) {
         <div class="checkout">
-          <mat-form-field appearance="outline" class="no-sub">
-            <mat-label>{{ 'billing.customer' | translate }}</mat-label>
-            <input matInput [ngModel]="customerQuery()" (ngModelChange)="pickCustomer($event)" [matAutocomplete]="cauto" [placeholder]="'billing.walkIn' | translate" />
-            <mat-autocomplete #cauto="matAutocomplete" (optionSelected)="pickCustomer($event.option.value)" [displayWith]="displayCustomer">
-              @for (c of filteredCustomers(); track c.id) {
-                <mat-option [value]="c">{{ c.name }} @if (c.currentBalance > 0) {<small class="text-danger">· {{ c.currentBalance | inr }}</small>}</mat-option>
-              }
-              <mat-option [value]="customerQuery()" (onSelectionChange)="$event.isUserInput && newCustomer()">
-                <span class="text-brand">+ {{ 'billing.newCustomer' | translate }}</span>
-              </mat-option>
-            </mat-autocomplete>
-          </mat-form-field>
-          @if (customer(); as c) {
-            <p class="text-sm text-muted m-0">{{ 'billing.customerBalance' | translate: { amount: (c.currentBalance | inr) } }}</p>
-          }
+          <!-- Customer -->
+          <label class="field customer">
+            <span class="material-symbols-outlined" aria-hidden="true">person</span>
+            <input
+              [ngModel]="customerQuery()"
+              (ngModelChange)="pickCustomer($event)"
+              [matAutocomplete]="cauto"
+              [placeholder]="'billing.walkIn' | translate"
+              [attr.aria-label]="'billing.customer' | translate"
+            />
+            @if (customer(); as c) {
+              <span class="due" [class.zero]="c.currentBalance <= 0">{{ 'billing.due' | translate }} {{ c.currentBalance | inr }}</span>
+            }
+          </label>
+          <mat-autocomplete #cauto="matAutocomplete" (optionSelected)="pickCustomer($event.option.value)" [displayWith]="displayCustomer">
+            @for (c of filteredCustomers(); track c.id) {
+              <mat-option [value]="c">{{ c.name }} @if (c.currentBalance > 0) {<small class="text-danger">· {{ c.currentBalance | inr }}</small>}</mat-option>
+            }
+            <mat-option [value]="customerQuery()" (onSelectionChange)="$event.isUserInput && newCustomer()">
+              <span class="text-brand">+ {{ 'billing.newCustomer' | translate }}</span>
+            </mat-option>
+          </mat-autocomplete>
 
-          <mat-button-toggle-group [value]="mode()" (change)="mode.set($event.value)" class="modes" [attr.aria-label]="'billing.paymentMode' | translate">
-            <mat-button-toggle value="cash">{{ 'pay.cash' | translate }}</mat-button-toggle>
-            <mat-button-toggle value="upi">{{ 'pay.upi' | translate }}</mat-button-toggle>
-            <mat-button-toggle value="udhaar">{{ 'pay.udhaar' | translate }}</mat-button-toggle>
-            <mat-button-toggle value="partial">{{ 'pay.partial' | translate }}</mat-button-toggle>
-          </mat-button-toggle-group>
-
-          <div class="grid grid-cols-2 gap-2">
-            <mat-form-field appearance="outline" class="no-sub">
-              <mat-label>{{ 'billing.discount' | translate }}</mat-label>
-              <span matTextPrefix>₹&nbsp;</span>
-              <input matInput type="number" inputmode="decimal" min="0" [ngModel]="discount()" (ngModelChange)="discount.set($event)" />
-            </mat-form-field>
-            @if (mode() === 'partial') {
-              <mat-form-field appearance="outline" class="no-sub">
-                <mat-label>{{ 'billing.paidNow' | translate }}</mat-label>
-                <span matTextPrefix>₹&nbsp;</span>
-                <input matInput type="number" inputmode="decimal" min="0" [ngModel]="paid()" (ngModelChange)="paid.set($event)" />
-              </mat-form-field>
+          <!-- Payment mode -->
+          <div class="modes" role="radiogroup" [attr.aria-label]="'billing.paymentMode' | translate">
+            @for (m of modes; track m.value) {
+              <button type="button" class="mode" role="radio" [attr.aria-checked]="mode() === m.value" [class.active]="mode() === m.value" (click)="mode.set(m.value)">
+                <span class="material-symbols-outlined" aria-hidden="true">{{ m.icon }}</span>
+                {{ 'pay.' + m.value | translate }}
+              </button>
             }
           </div>
 
+          <!-- Discount / paid now -->
+          <div class="money-row">
+            <label class="field small">
+              <span class="lbl">{{ 'billing.discount' | translate }}</span>
+              <span class="cur">₹</span>
+              <input type="number" inputmode="decimal" min="0" placeholder="0" [ngModel]="discount()" (ngModelChange)="discount.set($event)" />
+            </label>
+            @if (mode() === 'partial') {
+              <label class="field small">
+                <span class="lbl">{{ 'billing.paidNow' | translate }}</span>
+                <span class="cur">₹</span>
+                <input type="number" inputmode="decimal" min="0" placeholder="0" [ngModel]="paid()" (ngModelChange)="paid.set($event)" />
+              </label>
+            }
+          </div>
+
+          <!-- Totals -->
+          @if (discountPaise() || credit()) {
           <dl class="sum">
-            <dt>{{ 'billing.subtotal' | translate }}</dt><dd>{{ subtotal() | inr }}</dd>
+            <dt>{{ 'billing.subtotal' | translate }}</dt>
+            <dd>{{ subtotal() | inr }}</dd>
             @if (discountPaise()) {
-              <dt>{{ 'billing.discount' | translate }}</dt><dd>- {{ discountPaise() | inr }}</dd>
+              <dt>{{ 'billing.discount' | translate }}</dt>
+              <dd class="ok">− {{ discountPaise() | inr }}</dd>
             }
             @if (credit()) {
-              <dt class="text-danger">{{ 'billing.toUdhaar' | translate }}</dt><dd class="text-danger">{{ credit() | inr }}</dd>
+              <dt class="danger">{{ 'billing.toUdhaar' | translate }}</dt>
+              <dd class="danger">{{ credit() | inr }}</dd>
             }
-            <dt class="grand">{{ 'common.total' | translate }}</dt><dd class="grand">{{ total() | inr }}</dd>
           </dl>
+          }
 
-          <button mat-flat-button class="ds-big-btn w-full" (click)="save()" [disabled]="saving()">
-            <span class="material-symbols-outlined">receipt_long</span>{{ 'billing.save' | translate }} · {{ total() | inr }}
+          <button type="button" class="save" (click)="save()" [disabled]="saving()">
+            <span class="s-left">
+              <span class="material-symbols-outlined" aria-hidden="true">{{ saving() ? 'progress_activity' : 'check_circle' }}</span>
+              {{ 'billing.save' | translate }}
+            </span>
+            <span class="s-total">{{ total() | inr }}</span>
           </button>
         </div>
       }
     </aside>
   </div>
 
-  <!-- Mobile cart bar -->
+  <!-- Phones / tablets: summary bar that opens the bill sheet -->
   @if (cart().length && !showCart()) {
-    <button type="button" class="cart-bar md:hidden" (click)="showCart.set(true)">
-      <span class="material-symbols-outlined">shopping_cart</span>
-      <span>{{ 'billing.itemsInCart' | translate: { count: cart().length } }}</span>
+    <button type="button" class="cart-bar" (click)="showCart.set(true)">
+      <span class="cb-count">{{ cart().length }}</span>
+      <span class="cb-label">{{ 'billing.viewBill' | translate }}</span>
       <strong>{{ total() | inr }}</strong>
-      <span class="material-symbols-outlined">expand_less</span>
+      <span class="material-symbols-outlined" aria-hidden="true">expand_less</span>
     </button>
   }
 </section>

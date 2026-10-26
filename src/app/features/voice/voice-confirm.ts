@@ -27,6 +27,8 @@ interface Picked {
   id?: string;
   name?: string;
   match?: EntityMatch;
+  /** Not in the list yet: add a new customer with this name on confirm. */
+  create?: string;
 }
 
 const NEEDS_CUSTOMER = new Set(['add_credit', 'receive_payment']);
@@ -90,7 +92,7 @@ export class VoiceConfirm implements OnInit {
 
   protected readonly problems = computed(() => {
     const p: string[] = [];
-    if (this.needsCustomer() && !this.customer().id) p.push('voice.err.customer');
+    if (this.needsCustomer() && !this.customer().id && !this.customer().create?.trim()) p.push('voice.err.customer');
     if (this.needsSupplier() && !this.supplier().id) p.push('voice.err.supplier');
     if (this.hasAmount() && !this.effectiveAmount()) p.push('voice.err.amount');
     if (this.intent() === 'add_sale' && (!this.items().length || this.items().some((i) => !i.productId))) p.push('voice.err.products');
@@ -110,7 +112,7 @@ export class VoiceConfirm implements OnInit {
     const amount = formatPaise(this.effectiveAmount() ?? 0);
     const params = {
       amount,
-      name: this.customer().name ?? this.result().parsed.customerName ?? '?',
+      name: this.customer().name ?? this.customer().create ?? this.result().parsed.customerName ?? '?',
       supplier: this.supplier().name ?? this.result().parsed.supplierName ?? '?',
       product: this.product().name ?? this.result().parsed.productName ?? '?',
       qty: Math.abs(this.quantity() ?? 0),
@@ -123,7 +125,13 @@ export class VoiceConfirm implements OnInit {
     };
     const i = this.intent();
     const key =
-      i === 'add_credit' && this.items().length ? 'voice.ask.creditItems' : i === 'adjust_stock' && (this.quantity() ?? 0) < 0 ? 'voice.ask.stockDown' : `voice.ask.${i}`;
+      i === 'add_credit' && this.items().length
+        ? 'voice.ask.creditItems'
+        : i === 'adjust_stock' && (this.quantity() ?? 0) < 0
+          ? 'voice.ask.stockDown'
+          : this.result().settleFull && (i === 'receive_payment' || i === 'supplier_payment')
+            ? `voice.ask.${i}_full`
+            : `voice.ask.${i}`;
     return this.t.instant(key, params);
   });
 
@@ -132,6 +140,8 @@ export class VoiceConfirm implements OnInit {
   ngOnInit(): void {
     const r = this.result();
     this.customer.set(this.fromMatch(r.customer));
+    // Someone new taking udhaar: ready to be added on "Yes", no extra dialog needed.
+    if (!this.customer().id && r.newCustomerName) this.customer.update((p) => ({ ...p, create: r.newCustomerName }));
     this.supplier.set(this.fromMatch(r.supplier));
     this.product.set(r.intent === 'add_product' ? {} : this.fromMatch(r.product));
     let key = 0;
@@ -165,19 +175,42 @@ export class VoiceConfirm implements OnInit {
     return m.status === 'matched' && m.best ? { id: m.best.id, name: m.best.name, match: m } : { match: m };
   }
 
+  /** Switch from "pick one of these" to "add as a new customer". */
+  protected addAsNew(): void {
+    const name = this.result().newCustomerName ?? this.result().parsed.customerName ?? '';
+    this.customer.update((p) => ({ match: p.match, create: name }));
+  }
+
+  protected setNewName(name: string): void {
+    this.customer.update((p) => ({ ...p, create: name }));
+  }
+
   protected choose(which: 'customer' | 'supplier' | 'product', c: Candidate): void {
-    this[which].update((p) => ({ ...p, id: c.id, name: c.name }));
+    this[which].update((p) => ({ ...p, id: c.id, name: c.name, create: undefined }));
+    // "Sara udhaar de diya": the amount follows whichever customer/supplier is picked.
+    const balance = this.result().balances?.[c.id];
+    if (this.result().settleFull && which !== 'product' && balance !== undefined) this.amountRs.set(toRupees(balance));
   }
 
   protected clearPick(which: 'customer' | 'supplier' | 'product'): void {
     this[which].update((p) => ({ match: p.match }));
   }
 
+  /** "Pick an existing customer instead" from the new-customer box. */
+  protected pickExisting(): void {
+    this.customer.update((p) => ({ match: p.match }));
+  }
+
   protected createCustomer(): void {
     this.dialog
-      .open(CustomerFormDialog, { data: { name: this.result().parsed.customerName ?? '' }, width: '480px', maxWidth: '96vw', autoFocus: false })
+      .open(CustomerFormDialog, {
+        data: { name: this.customer().create ?? this.result().newCustomerName ?? this.result().parsed.customerName ?? '' },
+        width: '480px',
+        maxWidth: '96vw',
+        autoFocus: false,
+      })
       .afterClosed()
-      .subscribe((c?: Customer) => c && this.customer.update((p) => ({ ...p, id: c.id, name: c.name })));
+      .subscribe((c?: Customer) => c && this.customer.update((p) => ({ ...p, id: c.id, name: c.name, create: undefined })));
   }
 
   protected createSupplier(): void {
@@ -222,7 +255,8 @@ export class VoiceConfirm implements OnInit {
       intent: r.intent,
       text: r.text,
       customerId: this.customer().id,
-      customerName: this.customer().name,
+      customerName: this.customer().name ?? this.customer().create?.trim(),
+      newCustomerName: this.customer().id ? undefined : this.customer().create?.trim() || undefined,
       supplierId: this.supplier().id,
       supplierName: this.supplier().name,
       productId: this.product().id,

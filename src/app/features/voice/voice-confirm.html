@@ -21,6 +21,28 @@
           <strong>{{ customer().name }}</strong>
           <button mat-button (click)="clearPick('customer')">{{ 'voice.change' | translate }}</button>
         </div>
+      } @else if (customer().create !== undefined) {
+        <!-- New person: added to the Udhaar khata when the user confirms. -->
+        <div class="new-cust">
+          <div class="nc-head">
+            <span class="material-symbols-outlined icon-filled" aria-hidden="true">person_add</span>
+            <span>{{ 'voice.newCustomerTitle' | translate }}</span>
+          </div>
+          <input
+            class="nc-name"
+            [ngModel]="customer().create"
+            (ngModelChange)="setNewName($event)"
+            [attr.aria-label]="'auth.ownerName' | translate"
+            autocomplete="off"
+          />
+          <p class="nc-hint">{{ 'voice.newCustomerHint' | translate }}</p>
+          <div class="nc-actions">
+            @if (customer().match?.candidates?.length) {
+              <button type="button" class="nc-link" (click)="pickExisting()">{{ 'voice.pickExisting' | translate }}</button>
+            }
+            <button type="button" class="nc-link" (click)="createCustomer()">{{ 'voice.addDetails' | translate }}</button>
+          </div>
+        </div>
       } @else {
         @if (customer().match?.candidates?.length) {
           <p class="hint">{{ 'voice.whichCustomer' | translate: { name: result().parsed.customerName } }}</p>
@@ -35,7 +57,7 @@
         } @else {
           <p class="hint warn">{{ 'voice.customerNotFound' | translate: { name: result().parsed.customerName ?? '' } }}</p>
         }
-        <button mat-stroked-button (click)="createCustomer()"><span class="material-symbols-outlined">person_add</span>{{ 'voice.createCustomer' | translate: { name: result().parsed.customerName ?? '' } }}</button>
+        <button mat-stroked-button (click)="addAsNew()"><span class="material-symbols-outlined">person_add</span>{{ 'voice.createCustomer' | translate: { name: result().newCustomerName ?? result().parsed.customerName ?? '' } }}</button>
       }
     </div>
   }

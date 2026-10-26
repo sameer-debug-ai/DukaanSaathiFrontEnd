@@ -1,21 +1,18 @@
-<div class="wrap">
-
-  <div class="hero">
-    <div class="logo"><span class="material-symbols-outlined icon-filled">storefront</span></div>
-    <h1>{{ 'app.name' | translate }}</h1>
-    <p>{{ 'app.tagline' | translate }}</p>
-  </div>
-
-  <div class="ds-card card">
-    <h2>{{ 'auth.loginTitle' | translate }}</h2>
+<app-auth-layout>
+  <div class="card">
+    <div class="head">
+      <h2>{{ 'auth.loginTitle' | translate }}</h2>
+      <p>{{ 'auth.loginSub' | translate }}</p>
+    </div>
 
     @if (error()) {
-      <p class="error" role="alert">{{ error() }}</p>
+      <p class="error" role="alert"><span class="material-symbols-outlined" aria-hidden="true">error</span>{{ error() }}</p>
     }
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>{{ 'auth.phone' | translate }}</mat-label>
+        <span matPrefix class="material-symbols-outlined field-icon" aria-hidden="true">call</span>
         <span matTextPrefix>+91&nbsp;</span>
         <input matInput formControlName="phone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="14" />
         @if (form.controls.phone.hasError('phone')) {
@@ -25,8 +22,9 @@
         }
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>{{ 'auth.password' | translate }}</mat-label>
+        <span matPrefix class="material-symbols-outlined field-icon" aria-hidden="true">lock</span>
         <input
           matInput
           formControlName="password"
@@ -52,19 +50,22 @@
           <mat-progress-spinner mode="indeterminate" diameter="22" />
         } @else {
           {{ 'auth.login' | translate }}
+          <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
         }
       </button>
     </form>
 
     @if (showDemo) {
+      <div class="divider">{{ 'auth.or' | translate }}</div>
       <button type="button" class="demo" (click)="fillDemo()">
+        <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
         {{ 'auth.demoHint' | translate: demo }}
       </button>
     }
-  </div>
 
-  <p class="switch">
-    {{ 'auth.noAccount' | translate }}
-    <a routerLink="/register">{{ 'auth.createAccount' | translate }}</a>
-  </p>
-</div>
+    <p class="switch">
+      {{ 'auth.noAccount' | translate }}
+      <a routerLink="/register">{{ 'auth.createAccount' | translate }}</a>
+    </p>
+  </div>
+</app-auth-layout>

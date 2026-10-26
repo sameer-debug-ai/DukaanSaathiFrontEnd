@@ -130,7 +130,7 @@ export class VoicePanel implements OnInit, OnDestroy {
         } else {
           this.message.set(r.answer ?? '');
           this.stage.set('answer');
-          this.say(r.answer ?? '');
+          this.say(r.answer ?? '', r.replyLang);
         }
       },
       error: (e) => {
@@ -144,13 +144,13 @@ export class VoicePanel implements OnInit, OnDestroy {
     const r = this.result();
     if (!r) return;
     this.stage.set('saving');
-    this.executor.execute(cmd).subscribe({
+    this.executor.execute(cmd, r.replyLang).subscribe({
       next: (msg) => {
         this.api.updateLog(r.logId, { status: 'confirmed', resultMessage: msg }).subscribe({ error: () => undefined });
         this.message.set(msg);
         this.stage.set('done');
         this.toast.success(msg);
-        this.say(msg);
+        this.say(msg, r.replyLang);
         this.alerts.refresh();
         this.events.changed('any');
       },
@@ -190,8 +190,9 @@ export class VoicePanel implements OnInit, OnDestroy {
     this.stage.set('idle');
   }
 
-  private say(text: string): void {
-    if (this.speakBack()) this.speech.speak(text, this.lang.current() === 'hi' ? 'hi-IN' : 'en-IN');
+  /** Speaks in the language the command was spoken in (falls back to the app language). */
+  private say(text: string, lang: 'hi' | 'en' = this.lang.current()): void {
+    if (this.speakBack()) this.speech.speak(text, lang === 'hi' ? 'hi-IN' : 'en-IN');
   }
 
   protected errorKey(): string | null {

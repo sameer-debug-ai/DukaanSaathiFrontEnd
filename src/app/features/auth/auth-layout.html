@@ -1,0 +1,58 @@
+<div class="shell">
+  <aside class="brand" aria-hidden="false">
+    <div class="glow g1"></div>
+    <div class="glow g2"></div>
+
+    <app-logo [size]="48" [light]="true" />
+
+    <div class="pitch">
+      <h1>{{ 'auth.brand.headline' | translate }}</h1>
+      <p>{{ 'auth.brand.sub' | translate }}</p>
+
+      <ul class="features">
+        @for (f of features; track f.key) {
+          <li>
+            <span class="f-icon"><span class="material-symbols-outlined" aria-hidden="true">{{ f.icon }}</span></span>
+            {{ f.key | translate }}
+          </li>
+        }
+      </ul>
+
+      <!-- A small "live" preview of the voice flow. -->
+      <div class="preview" aria-hidden="true">
+        <div class="bubble">
+          <span class="material-symbols-outlined icon-filled mic">mic</span>
+          “Sharma ji ke udhaar me 500 add kar do”
+        </div>
+        <div class="result">
+          <span class="material-symbols-outlined icon-filled ok">check_circle</span>
+          <div>
+            <strong>₹500</strong> {{ 'auth.brand.previewDone' | translate }}
+            <small>Sharma ji · {{ 'auth.brand.previewBalance' | translate }} ₹1,700</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="foot">© {{ year }} DukaanSathi · {{ 'auth.brand.madeFor' | translate }}</p>
+  </aside>
+
+  <main class="side">
+    <div class="topbar">
+      <app-logo class="mobile-logo" [size]="38" />
+      <button type="button" class="lang" (click)="lang.toggle()">
+        <span class="material-symbols-outlined" aria-hidden="true">translate</span>
+        {{ lang.current() === 'hi' ? 'English' : 'हिंदी' }}
+      </button>
+    </div>
+
+    <div class="content">
+      <ng-content />
+    </div>
+
+    <p class="secure">
+      <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+      {{ 'auth.brand.secure' | translate }}
+    </p>
+  </main>
+</div>

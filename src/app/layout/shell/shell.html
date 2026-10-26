@@ -2,10 +2,7 @@
   @if (!isMobile()) {
     <aside class="sidebar" [attr.aria-label]="'nav.menu' | translate">
       <a routerLink="/dashboard" class="brand">
-        <span class="material-symbols-outlined icon-filled brand-icon">storefront</span>
-        @if (!collapsed()) {
-          <span class="brand-text">{{ 'app.name' | translate }}</span>
-        }
+        <app-logo [size]="34" [wordmark]="!collapsed()" />
       </a>
       <nav class="side-nav">
         @for (item of navItems; track item.path) {
@@ -37,7 +34,7 @@
           <span class="material-symbols-outlined">{{ collapsed() ? 'menu' : 'menu_open' }}</span>
         </button>
       } @else {
-        <span class="material-symbols-outlined icon-filled brand-icon">storefront</span>
+        <app-logo [size]="32" [wordmark]="false" />
       }
 
       <div class="shop">
@@ -94,5 +91,7 @@
     </nav>
   }
 
-  <app-mic-fab [raised]="isMobile()" />
+  @if (showFab()) {
+    <app-mic-fab [raised]="isMobile()" />
+  }
 </div>

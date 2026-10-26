@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { MatButton } from '@angular/material/button';
+import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -11,10 +11,11 @@ import { apiErrorMessage } from '../../../core/services/api.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { indianPhone, normalizePhone, passwordsMatch } from '../../../shared/validators';
+import { AuthLayout } from '../auth-layout';
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink, MatButton, MatFormFieldModule, MatInput, MatProgressSpinner, TranslatePipe],
+  imports: [ReactiveFormsModule, RouterLink, MatButton, MatIconButton, MatFormFieldModule, MatInput, MatProgressSpinner, TranslatePipe, AuthLayout],
   templateUrl: './register.html',
   styleUrl: '../auth-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,6 +28,7 @@ export class Register {
 
   protected readonly loading = signal(false);
   protected readonly error = signal('');
+  protected readonly showPassword = signal(false);
 
   protected readonly form = inject(NonNullableFormBuilder).group(
     {

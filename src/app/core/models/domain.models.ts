@@ -286,6 +286,14 @@ export interface VoiceParseResult {
   quantity: number | null;
   paymentMode: 'cash' | 'upi' | 'udhaar' | 'bank' | null;
   date: string | null;
+  /** Language the command was spoken in; answers, spoken replies and success messages use it. */
+  replyLang: 'hi' | 'en';
+  /** "Sara udhaar de diya": the amount is the picked party's whole balance. */
+  settleFull: boolean;
+  /** Customer not in the khata yet: suggested name (Roman letters) for a new entry. */
+  newCustomerName?: string;
+  /** Pending balance (paise) per candidate customer/supplier id. */
+  balances?: Record<string, number>;
   answer?: string;
   answerData?: VoiceAnswerData;
   needsConfirmation: boolean;

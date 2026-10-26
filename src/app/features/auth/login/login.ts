@@ -11,10 +11,11 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { apiErrorMessage } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { indianPhone, normalizePhone } from '../../../shared/validators';
+import { AuthLayout } from '../auth-layout';
 
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink, MatButton, MatIconButton, MatFormFieldModule, MatInput, MatProgressSpinner, TranslatePipe],
+  imports: [ReactiveFormsModule, RouterLink, MatButton, MatIconButton, MatFormFieldModule, MatInput, MatProgressSpinner, TranslatePipe, AuthLayout],
   templateUrl: './login.html',
   styleUrl: '../auth-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

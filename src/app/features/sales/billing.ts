@@ -3,11 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } 
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { MatButton, MatIconButton } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDialog } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInput } from '@angular/material/input';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth/auth.service';
 import type { Customer, Product, SalePaymentMode } from '../../core/models/domain.models';
@@ -16,9 +12,27 @@ import { CustomersApi, ProductsApi, SalesApi } from '../../core/services/data.se
 import { ToastService } from '../../core/services/toast.service';
 import { toPaise } from '../../core/utils/format';
 import { ConfirmService } from '../../shared/components/confirm-dialog/confirm-dialog';
-import { PageHeader } from '../../shared/components/page-header/page-header';
 import { InrPipe } from '../../shared/pipes/inr.pipe';
 import { CustomerFormDialog } from '../customers/customer-form-dialog';
+import { VoiceUi } from '../voice/voice-ui.service';
+
+const MODES: { value: SalePaymentMode; icon: string }[] = [
+  { value: 'cash', icon: 'payments' },
+  { value: 'upi', icon: 'qr_code_2' },
+  { value: 'udhaar', icon: 'menu_book' },
+  { value: 'partial', icon: 'call_split' },
+];
+
+/** Soft background/foreground pairs for product avatars, picked per category. */
+const TINTS = [
+  { bg: '#e3eefb', fg: '#1e5fa8' },
+  { bg: '#dcfce7', fg: '#15803d' },
+  { bg: '#ffedd5', fg: '#c2570c' },
+  { bg: '#fce7f3', fg: '#be185d' },
+  { bg: '#ede9fe', fg: '#6d28d9' },
+  { bg: '#cffafe', fg: '#0e7490' },
+  { bg: '#fef9c3', fg: '#a16207' },
+];
 
 interface CartLine {
   product: Product;
@@ -29,7 +43,7 @@ interface CartLine {
 /** Quick mobile-first billing: search / scan, tap to add, adjust qty, choose payment, save. */
 @Component({
   selector: 'app-billing',
-  imports: [FormsModule, MatAutocompleteModule, MatButton, MatIconButton, MatButtonToggleModule, MatFormFieldModule, MatInput, TranslatePipe, PageHeader, InrPipe],
+  imports: [FormsModule, MatAutocompleteModule, TranslatePipe, InrPipe],
   templateUrl: './billing.html',
   styleUrl: './billing.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,6 +60,8 @@ export class Billing implements OnInit {
   private readonly alerts = inject(StockAlertsService);
   private readonly auth = inject(AuthService);
   private readonly t = inject(TranslateService);
+  protected readonly voice = inject(VoiceUi);
+  protected readonly modes = MODES;
 
   protected readonly products = signal<Product[]>([]);
   protected readonly customers = signal<Customer[]>([]);
@@ -72,7 +88,12 @@ export class Billing implements OnInit {
   protected readonly subtotal = computed(() => this.cart().reduce((s, l) => s + Math.round(l.qty * l.rate), 0));
   protected readonly discountPaise = computed(() => Math.min(toPaise(this.discount()), this.subtotal()));
   protected readonly total = computed(() => this.subtotal() - this.discountPaise());
-  protected readonly itemCount = computed(() => this.cart().reduce((s, l) => s + l.qty, 0));
+  /** Quantity of each product already in the bill, for the badge on its tile. */
+  protected readonly cartQty = computed(() => new Map(this.cart().map((l) => [l.product.id, l.qty])));
+  private readonly tintByCategory = computed(() => new Map(this.categories().map((c, i) => [c, TINTS[i % TINTS.length]!])));
+  protected tint(category: string) {
+    return this.tintByCategory().get(category) ?? TINTS[0]!;
+  }
   protected readonly shortages = computed(() => this.cart().filter((l) => l.qty > l.product.currentStock));
   protected readonly credit = computed(() => {
     if (this.mode() === 'udhaar') return this.total();
