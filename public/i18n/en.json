@@ -405,7 +405,8 @@
     "addItem": "Add at least one item",
     "pickOrCreate": "Pick \"{{name}}\" from the list or create it as a new product",
     "qtyRate": "Enter quantity and rate for {{name}}",
-    "paidTooMuch": "Paid amount cannot be more than the total"
+    "paidTooMuch": "Paid amount cannot be more than the total",
+    "viewDetails": "View details"
   },
   "billing": {
     "title": "New bill",
@@ -838,5 +839,38 @@
     "readOnly": "Read-only khata · updated {{date}}",
     "invalidTitle": "This link does not work",
     "invalidHint": "It may have been turned off. Please ask the shop for a new link."
+  },
+  "billScan": {
+    "button": "Bill ki photo lo",
+    "buttonHint": "Take a photo of the supplier bill. Items, rates and total are filled in for you to check.",
+    "reading": "Reading the bill…",
+    "readingHint": "This takes a few seconds",
+    "retake": "Take the photo again",
+    "unreadable": "Bill ki photo saaf nahi aayi. Please take it again in good light, straight from above, with the whole bill in the frame.",
+    "notImage": "That file is not a photo. Please choose a JPG or PNG image of the bill.",
+    "tooBig": "The photo is too large. Please take it again.",
+    "tooMany": "Too many bill photos in a minute. Please wait a moment.",
+    "noAi": "Bill scanning is not set up on this server yet.",
+    "failed": "Could not read the bill right now. Please try again in a moment.",
+    "attachFailed": "Purchase saved, but the bill photo could not be attached.",
+    "filled": "Filled {{count}} items from the bill",
+    "checkHint": "Check every line, fix anything that is wrong, then save. Nothing is saved until you tap Save.",
+    "supplierMissing": "Supplier on the bill: \"{{name}}\" is not in your list.",
+    "addSupplier": "Add supplier",
+    "unreadableLines": "{{count}} lines were not clear. Please check the highlighted rows.",
+    "mismatch": "Items add up to {{items}}, but the bill total is {{bill}} (difference {{diff}}).",
+    "totalOk": "Items match the bill total {{bill}}.",
+    "removeScan": "Remove scan",
+    "matched": "Matched",
+    "linked": "Linked",
+    "willCreate": "New product will be created",
+    "unreadableRow": "Not clear — please check",
+    "whichProduct": "Which product?",
+    "onBill": "On bill: \"{{name}}\"",
+    "viewPhoto": "Open the bill photo",
+    "photoAlt": "Photo of the supplier bill",
+    "billPhoto": "Bill photo",
+    "tapToZoom": "Tap to open full size",
+    "noPhoto": "No bill photo (entered by hand)."
   }
 }

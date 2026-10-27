@@ -85,6 +85,7 @@ import { SupplierFormDialog, SupplierPaymentDialog } from './supplier-dialogs';
                         }
                       </tbody>
                     </table>
+                    <a mat-button class="self-start" [routerLink]="['/purchases', r.id]">{{ 'purchases.viewDetails' | translate }}</a>
                   }
                 </div>
               }

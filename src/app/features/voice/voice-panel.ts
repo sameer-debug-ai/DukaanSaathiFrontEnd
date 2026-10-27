@@ -16,6 +16,8 @@ import { ToastService } from '../../core/services/toast.service';
 import { storage } from '../../core/utils/storage';
 import { VoiceAnswer } from './voice-answer';
 import { VoiceConfirm } from './voice-confirm';
+import { BillScanDrafts, type BillScanDraft } from '../../core/services/bill-scan.api';
+import { BillScanButton } from '../purchases/bill-scan-button';
 import { toConfirmedCommand } from './voice-command';
 import { VoiceExecutor, type ConfirmedCommand } from './voice-executor.service';
 import { VoiceMultiConfirm } from './voice-multi-confirm';
@@ -44,7 +46,7 @@ const LANG_KEY = 'ds.voiceLang';
 /** The voice assistant sheet: listen -> parse -> confirm -> save (or answer a question). */
 @Component({
   selector: 'app-voice-panel',
-  imports: [FormsModule, MatDialogModule, MatButton, MatIconButton, MatProgressSpinner, TranslatePipe, VoiceAnswer, VoiceConfirm, VoiceMultiConfirm],
+  imports: [FormsModule, MatDialogModule, MatButton, MatIconButton, MatProgressSpinner, TranslatePipe, VoiceAnswer, VoiceConfirm, VoiceMultiConfirm, BillScanButton],
   templateUrl: './voice-panel.html',
   styleUrl: './voice-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,6 +62,7 @@ export class VoicePanel implements OnInit, OnDestroy {
   private readonly alerts = inject(StockAlertsService);
   private readonly t = inject(TranslateService);
   private readonly router = inject(Router);
+  private readonly billDrafts = inject(BillScanDrafts);
   private readonly customers = inject(CustomersApi);
   protected readonly speech = inject(SpeechService);
   private readonly replies = inject(VoiceReplies);
@@ -353,6 +356,13 @@ export class VoicePanel implements OnInit, OnDestroy {
   protected openRoute(route: string[]): void {
     this.ref.close();
     void this.router.navigate(route);
+  }
+
+  /** A scanned supplier bill: review it on the New Purchase page (nothing is saved yet). */
+  protected openScannedBill(draft: BillScanDraft): void {
+    this.billDrafts.set(draft);
+    this.ref.close();
+    void this.router.navigate(['/purchases/new'], { queryParams: { scan: 1 } });
   }
 
   private reset(): void {

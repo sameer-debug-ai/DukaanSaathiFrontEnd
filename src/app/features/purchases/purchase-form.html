@@ -1,6 +1,53 @@
 <section class="ds-page max-w-4xl">
   <app-page-header [title]="'suppliers.newPurchase' | translate" [subtitle]="'purchases.formHint' | translate" backLink="/purchases" />
 
+  <!-- Bill photo: scan fills the form below; the user checks everything before saving. -->
+  @if (scanDraft(); as d) {
+    <div class="ds-card scan-review mb-4">
+      <a class="scan-thumb" [href]="d.previewUrl" target="_blank" rel="noopener" [attr.aria-label]="'billScan.viewPhoto' | translate">
+        <img [src]="d.previewUrl" [alt]="'billScan.photoAlt' | translate" />
+      </a>
+      <div class="scan-info">
+        <div class="scan-title">
+          <span class="material-symbols-outlined" aria-hidden="true">document_scanner</span>
+          {{ 'billScan.filled' | translate: { count: d.result.items.length } }}
+        </div>
+        <p class="scan-hint">{{ 'billScan.checkHint' | translate }}</p>
+
+        @if (scanSupplierMissing()) {
+          <div class="scan-note warn">
+            <span class="material-symbols-outlined" aria-hidden="true">store</span>
+            <span>{{ 'billScan.supplierMissing' | translate: { name: d.result.supplier!.name } }}</span>
+            <button type="button" class="link" (click)="addSupplier(d.result.supplier!.name)">{{ 'billScan.addSupplier' | translate }}</button>
+          </div>
+        }
+        @if (scanUnreadable()) {
+          <div class="scan-note warn">
+            <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+            <span>{{ 'billScan.unreadableLines' | translate: { count: scanUnreadable() } }}</span>
+          </div>
+        }
+        @if (scanDiff(); as diff) {
+          <div class="scan-note danger" role="alert">
+            <span class="material-symbols-outlined" aria-hidden="true">calculate</span>
+            <span>{{ 'billScan.mismatch' | translate: { items: (total() | inr), bill: (d.result.billTotal | inr), diff: (diff < 0 ? -diff : diff) | inr } }}</span>
+          </div>
+        } @else if (d.result.billTotal !== null) {
+          <div class="scan-note ok">
+            <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+            <span>{{ 'billScan.totalOk' | translate: { bill: (d.result.billTotal | inr) } }}</span>
+          </div>
+        }
+        <div class="scan-actions">
+          <app-bill-scan-button [compact]="true" (scanned)="applyScan($event)" />
+          <button type="button" class="link muted" (click)="clearScan()">{{ 'billScan.removeScan' | translate }}</button>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <app-bill-scan-button class="mb-4" (scanned)="applyScan($event)" />
+  }
+
   <div class="ds-card p-4 mb-4">
     <div class="flex gap-2 items-start">
       <mat-form-field appearance="outline" class="flex-1">
@@ -31,7 +78,28 @@
     <div class="ds-section-title"><h2>{{ 'purchases.itemsTitle' | translate }}</h2></div>
     <div class="rows">
       @for (row of rows(); track row.key; let i = $index) {
-        <div class="row">
+        <div class="row" [class.needs-check]="row.scanStatus && !row.product && !row.isNew">
+          @if (row.scanStatus) {
+            <div class="scan-tag">
+              @if (row.product) {
+                <span class="ds-badge ok"><span class="material-symbols-outlined">check</span>{{ (row.scanStatus === 'matched' ? 'billScan.matched' : 'billScan.linked') | translate }}</span>
+              } @else if (row.isNew) {
+                <span class="ds-badge info"><span class="material-symbols-outlined">add_circle</span>{{ 'billScan.willCreate' | translate }}</span>
+              } @else if (row.scanStatus === 'unreadable') {
+                <span class="ds-badge warn"><span class="material-symbols-outlined">visibility_off</span>{{ 'billScan.unreadableRow' | translate }}</span>
+              } @else {
+                <span class="ds-badge warn"><span class="material-symbols-outlined">help</span>{{ 'billScan.whichProduct' | translate }}</span>
+              }
+              <span class="bill-name">{{ 'billScan.onBill' | translate: { name: row.scanName } }}</span>
+            </div>
+            @if (!row.product && row.candidates?.length) {
+              <div class="cands">
+                @for (c of row.candidates; track c.id) {
+                  <button type="button" class="ds-chip" (click)="pickCandidate(row, c)">{{ c.name }}</button>
+                }
+              </div>
+            }
+          }
           <div class="row-head">
             <span class="num-badge">{{ i + 1 }}</span>
             <mat-form-field appearance="outline" class="flex-1 no-sub">

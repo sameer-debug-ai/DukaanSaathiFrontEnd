@@ -10,14 +10,17 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { TranslatePipe } from '@ngx-translate/core';
-import { UNITS, type PaymentMode, type Product, type Supplier, type Unit } from '../../core/models/domain.models';
+import { UNITS, type Candidate, type PaymentMode, type Product, type Supplier, type Unit } from '../../core/models/domain.models';
+import { BillScanApi, BillScanDrafts, type BillScanDraft, type ScanItemStatus } from '../../core/services/bill-scan.api';
 import { AppEvents, StockAlertsService } from '../../core/services/app-events.service';
-import { ProductsApi, SuppliersApi, type PurchaseInput } from '../../core/services/data.services';
+import { ProductsApi, SuppliersApi, VoiceApi, type PurchaseInput } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
 import { dayToIso, istDay, toPaise, toRupees } from '../../core/utils/format';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { InrPipe } from '../../shared/pipes/inr.pipe';
 import { SupplierFormDialog } from '../suppliers/supplier-dialogs';
+import { BillScanButton } from './bill-scan-button';
+import { scanAliases, scanToRows, totalsMismatch } from './purchase-scan';
 
 interface Row {
   key: number;
@@ -29,6 +32,10 @@ interface Row {
   newSellingPrice: number | null;
   qty: number | null;
   rate: number | null;
+  /** Filled from a bill photo: the name as printed, how it matched, look-alikes to pick from. */
+  scanName?: string;
+  scanStatus?: ScanItemStatus;
+  candidates?: Candidate[];
 }
 
 let rowKey = 0;
@@ -38,7 +45,7 @@ const emptyRow = (): Row => ({ key: ++rowKey, query: '', product: null, isNew: f
   selector: 'app-purchase-form',
   imports: [
     FormsModule, MatAutocompleteModule, MatButton, MatIconButton, MatButtonToggleModule, MatCheckbox, MatFormFieldModule, MatInput,
-    MatSelectModule, TranslatePipe, PageHeader, InrPipe,
+    MatSelectModule, TranslatePipe, PageHeader, InrPipe, BillScanButton,
   ],
   templateUrl: './purchase-form.html',
   styleUrl: './purchase-form.scss',
@@ -48,6 +55,8 @@ export class PurchaseForm implements OnInit {
   /** Prefill from query params (?supplierId=&productId=) e.g. "Reorder". */
   readonly supplierId = input<string>();
   readonly productId = input<string>();
+  /** ?scan=1: open with the bill the voice panel just scanned. */
+  readonly scan = input<string>();
 
   private readonly suppliersApi = inject(SuppliersApi);
   private readonly productsApi = inject(ProductsApi);
@@ -56,6 +65,9 @@ export class PurchaseForm implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly events = inject(AppEvents);
   private readonly alerts = inject(StockAlertsService);
+  private readonly billScanApi = inject(BillScanApi);
+  private readonly drafts = inject(BillScanDrafts);
+  private readonly voiceApi = inject(VoiceApi);
 
   protected readonly units = UNITS;
   protected readonly suppliers = signal<Supplier[]>([]);
@@ -75,7 +87,24 @@ export class PurchaseForm implements OnInit {
   protected readonly paidPaise = computed(() => toPaise(this.paid()));
   protected readonly due = computed(() => Math.max(0, this.total() - this.paidPaise()));
 
+  // ---- Bill photo scan (review happens right here; nothing is saved until "Save purchase").
+  protected readonly scanDraft = signal<BillScanDraft | null>(null);
+  /** A scan that arrived before the product list loaded. */
+  private pendingScan: BillScanDraft | null = null;
+  private productsLoaded = false;
+  /** Bill total minus the rows' total (paise), when they differ by more than ₹1. Live while editing. */
+  protected readonly scanDiff = computed(() => {
+    const d = this.scanDraft();
+    return d ? totalsMismatch(this.total(), d.result.billTotal) : null;
+  });
+  protected readonly scanSupplierMissing = computed(() => {
+    const s = this.scanDraft()?.result.supplier;
+    return !!s && !this.supplier();
+  });
+  protected readonly scanUnreadable = computed(() => this.rows().filter((r) => r.scanStatus === 'unreadable' && !r.product).length);
+
   ngOnInit(): void {
+    if (this.scan()) this.pendingScan = this.drafts.take();
     this.suppliersApi.list({ limit: 500, sort: 'name' }).subscribe({
       next: (r) => {
         this.suppliers.set(r.data);
@@ -89,6 +118,8 @@ export class PurchaseForm implements OnInit {
         const pid = this.productId();
         const p = pid ? r.items.find((x) => x.id === pid) : undefined;
         if (p) this.rows.set([{ ...emptyRow(), query: p.name, product: p, rate: toRupees(p.purchasePrice), qty: p.lowStockThreshold * 3 || 1 }]);
+        this.productsLoaded = true;
+        if (this.pendingScan) this.applyScan(this.pendingScan);
       },
       error: (e) => this.toast.apiError(e),
     });
@@ -137,9 +168,49 @@ export class PurchaseForm implements OnInit {
     this.paid.set(toRupees(this.total()));
   }
 
-  protected addSupplier(): void {
+  /** Fills supplier, invoice, date and rows from a scanned bill, for the user to check. */
+  protected applyScan(d: BillScanDraft): void {
+    if (!this.productsLoaded) {
+      this.pendingScan = d; // applied once products load
+      return;
+    }
+    this.pendingScan = null;
+    const old = this.scanDraft();
+    if (old && old.previewUrl !== d.previewUrl) URL.revokeObjectURL(old.previewUrl);
+    this.scanDraft.set(d);
+    const r = d.result;
+    const sm = r.supplier?.match;
+    if (sm?.status === 'matched' && sm.best) this.supplier.set(sm.best.id);
+    if (r.invoiceNumber) this.invoice.set(r.invoiceNumber);
+    if (r.date && r.date <= this.today) this.date.set(r.date);
+    const rows = scanToRows(r, this.products()).map((x) => ({ ...emptyRow(), ...x }));
+    this.rows.set(rows.length ? rows : [emptyRow()]);
+  }
+
+  /** A look-alike picked for a bill line ("check"). */
+  protected pickCandidate(row: Row, c: Candidate): void {
+    const p = this.products().find((x) => x.id === c.id);
+    if (p) this.pick(row, p);
+  }
+
+  protected clearScan(): void {
+    const d = this.scanDraft();
+    if (d) URL.revokeObjectURL(d.previewUrl);
+    this.scanDraft.set(null);
+  }
+
+  /** After the purchase is saved: keep the photo with it, and learn the bill names the user linked. */
+  private afterScanSaved(purchaseId: string): void {
+    const d = this.scanDraft();
+    if (!d?.result.scanId) return;
+    this.billScanApi.attach(d.result.scanId, purchaseId).subscribe({ error: () => this.toast.error('billScan.attachFailed') });
+    const learn = scanAliases(this.rows(), d.result, this.supplier());
+    if (learn.length) this.voiceApi.learnAliases(learn).subscribe({ error: () => undefined });
+  }
+
+  protected addSupplier(name = ''): void {
     this.dialog
-      .open(SupplierFormDialog, { data: {}, width: '480px', maxWidth: '96vw', autoFocus: false })
+      .open(SupplierFormDialog, { data: { name }, width: '480px', maxWidth: '96vw', autoFocus: false })
       .afterClosed()
       .subscribe((s?: Supplier) => {
         if (!s) return;
@@ -175,6 +246,7 @@ export class PurchaseForm implements OnInit {
     this.saving.set(true);
     this.suppliersApi.createPurchase(body).subscribe({
       next: (p) => {
+        this.afterScanSaved(p.id);
         this.toast.success('purchases.saved');
         this.alerts.refresh();
         this.events.changed('purchases');

@@ -73,7 +73,10 @@ import { IstDatePipe } from '../../shared/pipes/ist-date.pipe';
                         }
                       </tbody>
                     </table>
-                    <a mat-button class="self-start" [routerLink]="['/suppliers', p.supplierId]">{{ 'purchases.viewSupplier' | translate }}</a>
+                    <div class="flex gap-2 flex-wrap">
+                      <a mat-button class="self-start" [routerLink]="['/purchases', p.id]">{{ 'purchases.viewDetails' | translate }}</a>
+                      <a mat-button class="self-start" [routerLink]="['/suppliers', p.supplierId]">{{ 'purchases.viewSupplier' | translate }}</a>
+                    </div>
                   }
                 </div>
               }

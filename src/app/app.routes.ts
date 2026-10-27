@@ -63,6 +63,7 @@ export const routes: Routes = [
         children: [
           { path: '', loadComponent: () => import('./features/purchases/purchases-list').then((m) => m.PurchasesList) },
           { path: 'new', loadComponent: () => import('./features/purchases/purchase-form').then((m) => m.PurchaseForm), title: 'New purchase · DukaanSathi' },
+          { path: ':id', loadComponent: () => import('./features/purchases/purchase-detail').then((m) => m.PurchaseDetail), title: 'Purchase · DukaanSathi' },
         ],
       },
       {
