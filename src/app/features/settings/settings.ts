@@ -8,7 +8,7 @@ import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth/auth.service';
 import type { Language } from '../../core/models/api.models';
-import type { DataCounts } from '../../core/models/domain.models';
+import type { AiStatus, DataCounts } from '../../core/models/domain.models';
 import { AppEvents, StockAlertsService } from '../../core/services/app-events.service';
 import { SettingsApi, VoiceApi } from '../../core/services/data.services';
 import { LanguageService } from '../../core/services/language.service';
@@ -16,8 +16,10 @@ import { ShareService } from '../../core/services/share.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { ToastService } from '../../core/services/toast.service';
 import { istDay } from '../../core/utils/format';
+import { VPA_RX } from '../../core/utils/upi';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { VoiceReplies } from '../voice/voice-replies.service';
+import { VoiceStt } from '../voice/voice-stt.service';
 
 @Component({
   selector: 'app-settings',
@@ -26,12 +28,14 @@ import { VoiceReplies } from '../voice/voice-replies.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Settings implements OnInit {
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly settingsApi = inject(SettingsApi);
   private readonly voiceApi = inject(VoiceApi);
   /** Spoken replies are a per-device choice (the speaker may be shared), so not part of the shop settings. */
   protected readonly voiceReplies = inject(VoiceReplies);
+  /** High-accuracy speech-to-text, also per device. */
+  protected readonly voiceStt = inject(VoiceStt);
   private readonly share = inject(ShareService);
   private readonly events = inject(AppEvents);
   private readonly alerts = inject(StockAlertsService);
@@ -42,7 +46,7 @@ export class Settings implements OnInit {
   protected readonly savingProfile = signal(false);
   protected readonly savingPassword = signal(false);
   protected readonly counts = signal<DataCounts | null>(null);
-  protected readonly ai = signal<{ provider: string; available: boolean } | null>(null);
+  protected readonly ai = signal<AiStatus | null>(null);
   protected readonly busy = signal(false);
 
   private readonly user = this.auth.user()!;
@@ -58,6 +62,12 @@ export class Settings implements OnInit {
   protected readonly prefsForm = this.fb.group({
     lowStockDefault: [this.user.settings.lowStockDefault, [Validators.required, Validators.min(0)]],
     allowOversell: [this.user.settings.allowOversell],
+  });
+
+  /** Shop UPI ID for "Pay via UPI" links / QR in reminders, statements and the khata page. */
+  protected readonly upiForm = this.fb.group({
+    upiId: [this.user.settings.upiId ?? '', [Validators.pattern(VPA_RX)]],
+    upiPayeeName: [this.user.settings.upiPayeeName ?? '', [Validators.maxLength(60)]],
   });
 
   protected readonly undoChoices = [30, 60, 120];
@@ -77,6 +87,7 @@ export class Settings implements OnInit {
   ngOnInit(): void {
     this.settingsApi.counts().subscribe({ next: (c) => this.counts.set(c), error: () => undefined });
     this.voiceApi.status().subscribe({ next: (s) => this.ai.set(s), error: () => undefined });
+    this.voiceStt.ready().subscribe();
   }
 
   protected saveProfile(): void {
@@ -99,6 +110,15 @@ export class Settings implements OnInit {
     if (this.prefsForm.invalid) return this.prefsForm.markAllAsTouched();
     const v = this.prefsForm.getRawValue();
     this.auth.updateProfile({ settings: { lowStockDefault: Number(v.lowStockDefault), allowOversell: v.allowOversell } }).subscribe({
+      next: () => this.toast.success('settings.saved'),
+      error: (e) => this.toast.apiError(e),
+    });
+  }
+
+  protected saveUpi(): void {
+    if (this.upiForm.invalid) return this.upiForm.markAllAsTouched();
+    const v = this.upiForm.getRawValue();
+    this.auth.updateProfile({ settings: { upiId: v.upiId.trim(), upiPayeeName: v.upiPayeeName.trim() } }).subscribe({
       next: () => this.toast.success('settings.saved'),
       error: (e) => this.toast.apiError(e),
     });

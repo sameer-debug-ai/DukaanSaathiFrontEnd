@@ -13,7 +13,10 @@
 
     <div class="hero ds-card" [class.due]="c.currentBalance > 0">
       <div class="hero-main">
-        <div class="label">{{ (c.currentBalance >= 0 ? 'customers.balanceDue' : 'customers.advanceHeld') | translate }}</div>
+        <div class="label">
+          {{ (c.currentBalance >= 0 ? 'customers.balanceDue' : 'customers.advanceHeld') | translate }}
+          <app-credit-badge [credit]="c.credit" [showScore]="true" />
+        </div>
         <div class="value">{{ (c.currentBalance < 0 ? -c.currentBalance : c.currentBalance) | inr }}</div>
         <div class="meta">
           {{ 'customers.totalCredit' | translate }} {{ c.stats.totalCredit | inr }} · {{ 'customers.totalPaid' | translate }} {{ c.stats.totalPaid | inr }}
@@ -21,6 +24,20 @@
             · {{ 'customers.limit' | translate }} {{ c.creditLimit | inr }}
           }
         </div>
+        @if (c.reminderEveryDays || c.dueDate) {
+          <div class="meta">
+            <span class="material-symbols-outlined align-middle" style="font-size: 16px" aria-hidden="true">notifications</span>
+            @if (c.dueDate) {
+              {{ 'reminders.dueOn' | translate: { date: (c.dueDate | istDate) } }}
+            }
+            @if (c.reminderEveryDays) {
+              {{ 'reminders.everyN' | translate: { n: c.reminderEveryDays } }}
+            }
+            @if (c.lastReminderAt) {
+              · {{ 'reminders.lastSent' | translate: { date: (c.lastReminderAt | istDate) } }}
+            }
+          </div>
+        }
         @if (c.phone || c.address) {
           <div class="meta">
             @if (c.phone) {
@@ -37,7 +54,7 @@
         <button mat-flat-button class="ds-big-btn btn-payment" (click)="entry('payment')">
           <span class="material-symbols-outlined">payments</span>{{ 'ledger.receive' | translate }}
         </button>
-        <a mat-stroked-button class="ds-big-btn" [href]="remindUrl()" target="_blank" rel="noopener" [class.disabled]="c.currentBalance <= 0">
+        <a mat-stroked-button class="ds-big-btn" [href]="remindUrl()" target="_blank" rel="noopener" [class.disabled]="c.currentBalance <= 0" (click)="reminderSent()">
           <span class="material-symbols-outlined">chat</span>
           <span class="label-full">{{ 'customers.remind' | translate }}</span>
           <span class="label-short">{{ 'customers.remindShort' | translate }}</span>
@@ -45,6 +62,11 @@
         <button mat-stroked-button class="ds-big-btn" (click)="statement()" [disabled]="pdfBusy()">
           <span class="material-symbols-outlined">picture_as_pdf</span>{{ 'customers.statementShort' | translate }}
         </button>
+        @if (upiLink()) {
+          <button mat-stroked-button class="ds-big-btn" (click)="showQr()">
+            <span class="material-symbols-outlined">qr_code_2</span>{{ 'upi.qrButton' | translate }}
+          </button>
+        }
       </div>
       @if (!c.phone && c.currentBalance > 0) {
         <p class="hint">{{ 'customers.noPhoneHint' | translate }}</p>
@@ -53,6 +75,10 @@
 
     <div class="ds-card p-4 mt-4">
       <app-alias-chips [aliases]="c.aliases" [busy]="aliasBusy()" (remove)="removeAlias($event)" />
+    </div>
+
+    <div class="ds-card overflow-hidden mt-4">
+      <app-khata-link-card [customer]="c" [shopName]="auth.user()?.shopName ?? ''" />
     </div>
 
     <div class="ds-card overflow-hidden mt-4">

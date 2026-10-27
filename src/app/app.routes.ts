@@ -16,6 +16,12 @@ export const routes: Routes = [
     title: 'Register · DukaanSathi',
   },
   {
+    // Customer's read-only khata from a shared link: no login, no app shell.
+    path: 'k/:token',
+    loadComponent: () => import('./features/public/khata-page').then((m) => m.KhataPage),
+    title: 'Khata · DukaanSathi',
+  },
+  {
     path: '',
     component: Shell,
     canActivate: [authGuard],

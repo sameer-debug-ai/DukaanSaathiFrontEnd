@@ -60,7 +60,8 @@ export class PdfService {
     }
   }
 
-  async customerStatement(ledger: CustomerLedger, from?: string, to?: string): Promise<File> {
+  /** `upi`: adds a "Pay via UPI" QR + link under the balance (only when something is due). */
+  async customerStatement(ledger: CustomerLedger, from?: string, to?: string, upi?: { link: string; qr: string; vpa: string }): Promise<File> {
     const { doc, autoTable } = await this.create();
     const c = ledger.customer;
     const range = from || to ? `Period: ${from ? formatIstDate(from) : 'start'} to ${to ? formatIstDate(to) : 'today'}` : 'Full account statement';
@@ -95,6 +96,24 @@ export class PdfService {
       40,
       endY,
     );
+    if (upi && ledger.closingBalance > 0) {
+      const h = doc.internal.pageSize.getHeight();
+      let top = endY + 16;
+      if (top + 130 > h - 40) {
+        doc.addPage();
+        top = 50;
+      }
+      doc.addImage(upi.qr, 'PNG', 40, top, 110, 110);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(30, 30, 30);
+      doc.text('Pay via UPI', 165, top + 18);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(90, 90, 90);
+      doc.text(`Scan with any UPI app or pay to ${upi.vpa}`, 165, top + 36);
+      doc.textWithLink('Tap here to pay (UPI link)', 165, top + 54, { url: upi.link });
+    }
     this.footer(doc);
     const name = `statement-${c.name.replace(/\W+/g, '-').toLowerCase()}.pdf`;
     return new File([doc.output('blob')], name, { type: 'application/pdf' });

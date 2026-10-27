@@ -20,6 +20,7 @@ import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { Skeleton } from '../../shared/components/skeleton/skeleton';
 import { StatCard } from '../../shared/components/stat-card/stat-card';
 import { StockBadge } from '../../shared/components/stock-badge/stock-badge';
+import { TodayRemindersCard } from './today-reminders';
 
 const TXN_ICON: Record<RecentTxn['kind'], { icon: string; cls: string; sign: string }> = {
   sale: { icon: 'receipt_long', cls: 'info', sign: '' },
@@ -31,7 +32,7 @@ const TXN_ICON: Record<RecentTxn['kind'], { icon: string; cls: string; sign: str
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, MatButton, TranslatePipe, BaseChartDirective, InrPipe, IstDatePipe, StatCard, StockBadge, Skeleton, EmptyState],
+  imports: [RouterLink, MatButton, TranslatePipe, BaseChartDirective, InrPipe, IstDatePipe, StatCard, StockBadge, Skeleton, EmptyState, TodayRemindersCard],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -42,6 +42,8 @@
       <app-stat-card [label]="'dashboard.outOfStock' | translate" [value]="'' + s.outOfStockCount" icon="block" tone="danger" link="/products/alerts" />
     </div>
 
+    <app-today-reminders />
+
     <nav class="quick" [attr.aria-label]="'dashboard.quickActions' | translate">
       <a routerLink="/sales/new"><span class="material-symbols-outlined">point_of_sale</span>{{ 'dashboard.qa.bill' | translate }}</a>
       <a routerLink="/customers"><span class="material-symbols-outlined">add_card</span>{{ 'dashboard.qa.udhaar' | translate }}</a>

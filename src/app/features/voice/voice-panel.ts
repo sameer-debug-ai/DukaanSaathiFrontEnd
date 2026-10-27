@@ -10,6 +10,7 @@ import { apiErrorMessage } from '../../core/services/api.service';
 import { AppEvents, StockAlertsService } from '../../core/services/app-events.service';
 import { CustomersApi, VoiceApi } from '../../core/services/data.services';
 import { LanguageService } from '../../core/services/language.service';
+import { MAX_RECORDING_MS } from '../../core/services/audio-recorder.service';
 import { SpeechService, type SpeechLang } from '../../core/services/speech.service';
 import { ToastService } from '../../core/services/toast.service';
 import { storage } from '../../core/utils/storage';
@@ -19,6 +20,7 @@ import { toConfirmedCommand } from './voice-command';
 import { VoiceExecutor, type ConfirmedCommand } from './voice-executor.service';
 import { VoiceMultiConfirm } from './voice-multi-confirm';
 import { VoiceReplies } from './voice-replies.service';
+import { VoiceStt } from './voice-stt.service';
 import { VoiceUndo } from './voice-undo.service';
 
 type Stage = 'idle' | 'listening' | 'parsing' | 'confirm' | 'saving' | 'done' | 'answer';
@@ -61,6 +63,12 @@ export class VoicePanel implements OnInit, OnDestroy {
   private readonly customers = inject(CustomersApi);
   protected readonly speech = inject(SpeechService);
   private readonly replies = inject(VoiceReplies);
+  /** High-accuracy mode / no browser recogniser: record and transcribe on the server. */
+  protected readonly stt = inject(VoiceStt);
+  protected readonly recorder = this.stt.recorder;
+  protected readonly maxSeconds = MAX_RECORDING_MS / 1000;
+  protected readonly transcribing = signal(false);
+  private recordRun = 0;
 
   protected readonly stage = signal<Stage>('idle');
   protected readonly text = signal('');
@@ -80,14 +88,22 @@ export class VoicePanel implements OnInit, OnDestroy {
     if (this.data?.text) {
       this.text.set(this.data.text);
       this.submit();
-    } else if (this.speech.supported) {
+    } else if (this.speech.supported && !this.stt.highAccuracy()) {
       this.listen();
+      this.stt.ready().subscribe();
+    } else {
+      // No browser recogniser (iOS Safari) or high-accuracy mode: first check the server can transcribe.
+      this.stt.ready().subscribe(() => {
+        if (this.stage() === 'idle' && !this.text() && this.stt.canListen()) this.listen();
+      });
     }
   }
 
   ngOnDestroy(): void {
     clearTimeout(this.undoTimer);
     this.speech.cancel();
+    this.recordRun++;
+    this.recorder.cancel();
   }
 
   protected toggleLang(): void {
@@ -101,6 +117,7 @@ export class VoicePanel implements OnInit, OnDestroy {
   }
 
   protected listen(): void {
+    if (this.stt.useRecorder()) return this.record();
     if (!this.speech.supported) return;
     this.reset();
     this.stage.set('listening');
@@ -122,7 +139,46 @@ export class VoicePanel implements OnInit, OnDestroy {
   }
 
   protected stopListening(): void {
-    this.speech.stop();
+    if (this.recorder.recording()) this.recorder.stop();
+    else this.speech.stop();
+  }
+
+  /** Records up to 30 s, gets the text from the server, then continues exactly like typed/spoken text. */
+  private record(): void {
+    this.reset();
+    this.speech.cancel();
+    this.stage.set('listening');
+    const run = ++this.recordRun;
+    const lang = this.speechLang() === 'hi-IN' ? 'hi' : 'en';
+    void this.recorder.start().then((audio) => {
+      // A newer recording (language switch) or a closed panel replaced this one.
+      if (run !== this.recordRun || this.stage() !== 'listening') return;
+      if (!audio) {
+        this.stage.set('idle');
+        return;
+      }
+      this.text.set('');
+      this.transcribing.set(true);
+      this.stage.set('parsing');
+      this.api.transcribe(audio, lang).subscribe({
+        next: ({ text }) => {
+          this.transcribing.set(false);
+          if (run !== this.recordRun) return;
+          if (!text.trim()) {
+            this.stage.set('idle');
+            this.toast.info('voice.noSpeech');
+            return;
+          }
+          this.text.set(text);
+          this.submit();
+        },
+        error: (e) => {
+          this.transcribing.set(false);
+          this.stage.set('idle');
+          this.toast.error(apiErrorMessage(e));
+        },
+      });
+    });
   }
 
   protected useExample(e: string): void {
@@ -287,7 +343,7 @@ export class VoicePanel implements OnInit, OnDestroy {
 
   protected again(): void {
     this.reset();
-    if (this.speech.supported) this.listen();
+    if (this.stt.canListen()) this.listen();
   }
 
   protected close(): void {
@@ -311,7 +367,7 @@ export class VoicePanel implements OnInit, OnDestroy {
   }
 
   protected errorKey(): string | null {
-    const e = this.speech.error();
+    const e = this.stt.useRecorder() ? this.recorder.error() : this.speech.error();
     if (!e || e === 'aborted' || e === 'no-speech') return e === 'no-speech' ? 'voice.noSpeech' : null;
     return e === 'not-allowed' || e === 'service-not-allowed' ? 'voice.micBlocked' : 'voice.micError';
   }

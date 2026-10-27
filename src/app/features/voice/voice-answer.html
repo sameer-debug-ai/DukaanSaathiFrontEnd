@@ -102,6 +102,94 @@
     </div>
   }
 
+  @case ('analytics') {
+    @let a = analytics()!;
+    <div class="an-head">
+      <span class="an-title">{{ 'voice.analytics.title.' + a.fn | translate }}</span>
+      @if (a.period) {
+        <span class="ds-badge info">{{ 'voice.analytics.period.' + a.period | translate }}</span>
+      } @else if (a.days) {
+        <span class="ds-badge info">{{ 'voice.analytics.days' | translate: { n: a.days } }}</span>
+      }
+    </div>
+
+    @if (a.totals; as tot) {
+      @if (a.fn === 'compare_sales') {
+        <div class="grid">
+          <div class="stat">
+            <div class="label">{{ 'voice.analytics.col.previous' | translate }}</div>
+            <div class="val">{{ tot['previous'] | inr }}</div>
+            <div class="sub">{{ 'voice.analytics.bills' | translate: { n: tot['previousBills'] } }}</div>
+          </div>
+          <div class="stat">
+            <div class="label">{{ 'voice.analytics.col.current' | translate }}</div>
+            <div class="val" [class.text-danger]="tot['change'] < 0" [class.text-ok]="tot['change'] > 0">{{ tot['current'] | inr }}</div>
+            <div class="sub">{{ 'voice.analytics.bills' | translate: { n: tot['currentBills'] } }}</div>
+          </div>
+        </div>
+      } @else if (a.fn === 'profit') {
+        <div class="grid">
+          <div class="stat">
+            <div class="label">{{ 'voice.analytics.col.profit' | translate }}</div>
+            <div class="val" [class.text-ok]="tot['profit'] > 0" [class.text-danger]="tot['profit'] < 0">{{ tot['profit'] | inr }}</div>
+            <div class="sub">{{ 'voice.analytics.margin' | translate: { n: tot['margin'] } }}</div>
+          </div>
+          <div class="stat">
+            <div class="label">{{ 'voice.analytics.col.revenue' | translate }}</div>
+            <div class="val">{{ tot['revenue'] | inr }}</div>
+            <div class="sub">{{ 'voice.analytics.col.cost' | translate }}: {{ tot['cost'] | inr }}</div>
+          </div>
+        </div>
+      } @else if (tot['count']) {
+        <div class="grid">
+          <div class="stat">
+            <div class="label">{{ 'voice.analytics.customers' | translate }}</div>
+            <div class="val">{{ tot['count'] }}</div>
+          </div>
+          <div class="stat">
+            <div class="label">{{ 'voice.analytics.totalDue' | translate }}</div>
+            <div class="val text-danger">{{ tot['balance'] | inr }}</div>
+          </div>
+        </div>
+      }
+    }
+
+    @if (chart(); as cfg) {
+      <div class="an-chart" [style.height.px]="chartHeight()" role="img" [attr.aria-label]="'voice.analytics.title.' + a.fn | translate">
+        <canvas baseChart [type]="cfg.type" [data]="cfg.data" [options]="cfg.options"></canvas>
+      </div>
+    }
+
+    @if (a.rows.length && a.fn !== 'profit') {
+      <div class="an-table-wrap">
+        <table class="an-table">
+          <thead>
+            <tr>
+              @for (c of a.columns; track c.key) {
+                <th [class.num]="c.type !== 'text'">{{ 'voice.analytics.col.' + c.key | translate }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of a.rows; track $index) {
+              @let link = rowLink(a, row);
+              <tr [class.clickable]="link" (click)="link && open.emit(link)">
+                @for (c of a.columns; track c.key) {
+                  <td [class.num]="c.type !== 'text'" [class.text-danger]="sign(row, c.key) < 0" [class.text-ok]="sign(row, c.key) > 0">{{ cell(row, c) }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (!a.rows.length) {
+      <div class="empty">
+        <span class="material-symbols-outlined text-muted" aria-hidden="true">insights</span>
+        <p>{{ message() }}</p>
+      </div>
+    }
+  }
+
   @case ('choose') {
     <ul class="choose">
       @for (c of d.choose; track c.id) {

@@ -109,6 +109,19 @@ export class VoiceConfirm implements OnInit {
     return p;
   });
 
+  /**
+   * Over the credit limit / "Risky" customer (from the server), for the customer picked on this
+   * card. The new balance follows the amount as it is edited.
+   */
+  protected readonly creditWarning = computed(() => {
+    const w = this.result().creditWarning;
+    if (!w || !this.needsCustomer() || this.customer().id !== w.customerId) return null;
+    const newBalance = w.balance + (this.effectiveAmount() ?? 0);
+    const overLimit = !!w.limit && newBalance > w.limit;
+    if (!overLimit && w.badge !== 'risky') return null;
+    return { ...w, newBalance, overLimit };
+  });
+
   protected readonly summary = computed(() => {
     const amount = formatPaise(this.effectiveAmount() ?? 0);
     const params = {

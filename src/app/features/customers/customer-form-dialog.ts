@@ -4,11 +4,12 @@ import { MatButton, MatIconButton } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { TranslatePipe } from '@ngx-translate/core';
 import type { Customer } from '../../core/models/domain.models';
 import { CustomersApi } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
-import { toPaise, toRupees } from '../../core/utils/format';
+import { istDay, toPaise, toRupees } from '../../core/utils/format';
 import { indianPhone, normalizePhone } from '../../shared/validators';
 
 export interface CustomerFormData {
@@ -18,7 +19,7 @@ export interface CustomerFormData {
 
 @Component({
   selector: 'app-customer-form-dialog',
-  imports: [ReactiveFormsModule, MatDialogModule, MatButton, MatIconButton, MatFormFieldModule, MatInput, TranslatePipe],
+  imports: [ReactiveFormsModule, MatDialogModule, MatButton, MatIconButton, MatFormFieldModule, MatInput, MatSelectModule, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="fd">
@@ -79,6 +80,20 @@ export interface CustomerFormData {
                 <input matInput type="number" inputmode="decimal" formControlName="creditLimit" min="0" />
                 <mat-hint>{{ 'customers.creditLimitHint' | translate }}</mat-hint>
               </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ 'reminders.frequency' | translate }}</mat-label>
+                <span matPrefix class="material-symbols-outlined fd-field-icon">notifications</span>
+                <mat-select formControlName="reminderEveryDays">
+                  @for (n of reminderChoices; track n) {
+                    <mat-option [value]="n">{{ (n ? 'reminders.everyN' : 'reminders.never') | translate: { n: n } }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ 'reminders.dueDate' | translate }}</mat-label>
+                <input matInput type="date" formControlName="dueDate" />
+                <mat-hint>{{ 'reminders.dueDateHint' | translate }}</mat-hint>
+              </mat-form-field>
             </div>
           </section>
         </mat-dialog-content>
@@ -106,7 +121,10 @@ export class CustomerFormDialog {
     phone: [this.data.customer?.phone ?? '', [indianPhone]],
     address: [this.data.customer?.address ?? ''],
     creditLimit: [this.data.customer?.creditLimit ? toRupees(this.data.customer.creditLimit) : (null as unknown as number)],
+    reminderEveryDays: [(this.data.customer?.reminderEveryDays ?? 0) as 0 | 7 | 15 | 30],
+    dueDate: [this.data.customer?.dueDate ? istDay(new Date(this.data.customer.dueDate)) : ''],
   });
+  protected readonly reminderChoices = [0, 7, 15, 30] as const;
 
   protected save(): void {
     if (this.form.invalid) {
@@ -120,6 +138,9 @@ export class CustomerFormDialog {
       phone: normalizePhone(v.phone),
       address: v.address.trim(),
       creditLimit: v.creditLimit ? toPaise(v.creditLimit) : undefined,
+      reminderEveryDays: v.reminderEveryDays,
+      // Clearing the date on edit removes it; a new customer just has none.
+      dueDate: v.dueDate ? v.dueDate : this.data.customer?.dueDate ? null : undefined,
     };
     this.saving.set(true);
     const req = this.data.customer ? this.api.update(this.data.customer.id, body) : this.api.create(body);

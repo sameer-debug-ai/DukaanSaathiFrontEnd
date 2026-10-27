@@ -483,7 +483,10 @@
       "paid": "Paid",
       "payable": "Payable now",
       "atCost": "Value at cost",
-      "atSale": "Value at selling price"
+      "atSale": "Value at selling price",
+      "d31_60": "31-60 days",
+      "d61_90": "61-90 days",
+      "d90_plus": "Over 90 days"
     },
     "col": {
       "day": "Date",
@@ -512,12 +515,18 @@
       "purchasePrice": "Cost / unit",
       "costValue": "Value at cost",
       "saleValue": "Value at selling price",
-      "qty": "Qty sold"
+      "qty": "Qty sold",
+      "d0_30": "0-30 days",
+      "d31_60": "31-60 days",
+      "d61_90": "61-90 days",
+      "d90_plus": "90+ days"
     },
     "series": {
       "Sales": "Sales",
-      "Profit": "Profit"
-    }
+      "Profit": "Profit",
+      "Udhaar": "Udhaar"
+    },
+    "aging": "Old udhaar (aging)"
   },
   "settings": {
     "title": "Settings",
@@ -555,7 +564,16 @@
     "voiceUndoHint": "How long after saving a voice entry can be undone, with the Undo button or by saying “galti ho gayi”.",
     "seconds": "{{n}} sec",
     "voiceReplies": "Voice replies",
-    "voiceRepliesHint": "Speak a short reply after each voice command (on this device)."
+    "voiceRepliesHint": "Speak a short reply after each voice command (on this device).",
+    "highAccuracy": "High accuracy mode",
+    "highAccuracyHint": "Records your voice and converts it on the server. Better for names and noisy shops; uses mobile data (on this device).",
+    "highAccuracyOff": "Not set up on the server yet (STT_PROVIDER).",
+    "highAccuracyNoMic": "This browser cannot record audio.",
+    "upi": "UPI payments",
+    "upiHint": "Customers get a \"Pay via UPI\" link and QR code in reminders, statements and their khata page.",
+    "upiId": "Shop UPI ID",
+    "upiIdInvalid": "Enter a valid UPI ID, e.g. shopname@okaxis",
+    "upiPayeeName": "Name shown in UPI apps (optional)"
   },
   "more": {
     "title": "More"
@@ -627,7 +645,8 @@
       "query_summary": "Sales summary",
       "unknown": "Not understood",
       "undo_last": "Undo last",
-      "reset_context": "New conversation"
+      "reset_context": "New conversation",
+      "query_analytics": "Business question"
     },
     "status": {
       "confirmed": "Saved",
@@ -696,6 +715,47 @@
       "error": "Sorry, it could not be saved. {{msg}}",
       "errorPlain": "Sorry, it could not be saved. Please check the screen.",
       "notUnderstood": "Sorry, I didn't get that. Please say it again."
+    },
+    "stt": {
+      "recording": "Recording… {{s}} / {{max}} sec. Tap to stop.",
+      "transcribing": "Converting your voice to text…",
+      "badge": "High accuracy"
+    },
+    "analytics": {
+      "title": {
+        "top_products": "Best sellers",
+        "inactive_debtors": "Not paying",
+        "compare_sales": "Sales comparison",
+        "profit": "Profit (estimate)",
+        "top_debtors": "Highest udhaar"
+      },
+      "period": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "this_week": "Last 7 days",
+        "last_week": "Previous week",
+        "this_month": "This month",
+        "last_month": "Last month"
+      },
+      "days": "No payment for {{n}} days",
+      "bills": "{{n}} bills",
+      "margin": "{{n}}% margin",
+      "customers": "Customers",
+      "totalDue": "Total due",
+      "col": {
+        "name": "Name",
+        "qty": "Qty",
+        "unit": "Unit",
+        "revenue": "Sales",
+        "balance": "Udhaar",
+        "lastPayment": "Last paid",
+        "current": "Now",
+        "previous": "Before",
+        "change": "Change",
+        "day": "Day",
+        "cost": "Cost",
+        "profit": "Profit"
+      }
     }
   },
   "aliases": {
@@ -703,5 +763,78 @@
     "empty": "No other names yet. They are added when you pick the right name in the voice assistant.",
     "remove": "Remove {{name}}",
     "removed": "Removed “{{name}}”"
+  },
+  "upi": {
+    "qrButton": "UPI QR",
+    "scanToPay": "Scan to pay",
+    "qrAlt": "UPI QR code to pay {{amount}}",
+    "payTo": "UPI ID:",
+    "copyLink": "Copy link",
+    "openApp": "Open UPI app",
+    "copied": "UPI link copied",
+    "qrType": "QR type",
+    "withAmount": "With amount",
+    "withoutAmount": "Without amount",
+    "typeAmount": "Customer types {{amount}} in their UPI app.",
+    "failHint": "If the payment fails, use \"Without amount\"."
+  },
+  "credit": {
+    "badge": {
+      "good": "Good",
+      "average": "Average",
+      "risky": "Risky",
+      "new": "New"
+    },
+    "scoreTitle": "Credit score {{score}}/100 · {{pct}}% recovered",
+    "overLimit": "Over the credit limit of {{limit}}: balance will be {{balance}}.",
+    "overLimitShort": "Over credit limit",
+    "riskyWarning": "Risky customer: old udhaar is unpaid. Give more udhaar carefully.",
+    "riskyShort": "Risky customer"
+  },
+  "reminders": {
+    "today": "Today's reminders",
+    "sentToday": "{{n}} sent today",
+    "send": "Remind",
+    "sendTo": "Send WhatsApp reminder to {{name}}",
+    "allDone": "All reminders for today are sent.",
+    "firstReminder": "First reminder",
+    "dueOn": "Due {{date}}",
+    "everyN": "Every {{n}} days",
+    "never": "No automatic reminder",
+    "lastSent": "last reminded {{date}}",
+    "frequency": "Payment reminder",
+    "dueDate": "Promised payment date",
+    "dueDateHint": "Shows in \"Today's reminders\" on that day."
+  },
+  "khataLink": {
+    "title": "Khata link for the customer",
+    "hint": "A private, read-only page where the customer sees their balance and entries and can pay by UPI. No login needed.",
+    "active": "Active",
+    "create": "Create link",
+    "regenerate": "New link",
+    "disable": "Turn off link",
+    "copy": "Copy link",
+    "sendWhatsapp": "Send on WhatsApp",
+    "copyNow": "Copy or send it now: for safety the full link is shown only once. Make a new link any time.",
+    "since": "Link active since {{date}}",
+    "views": "opened {{n}} times",
+    "confirmRegenerate": "Make a new link? The old link will stop working.",
+    "confirmDisable": "Turn off the link? The customer will not be able to open it.",
+    "disabled": "Link turned off",
+    "copied": "Link copied"
+  },
+  "publicKhata": {
+    "hello": "Namaste {{name}} ji",
+    "due": "Amount due",
+    "advance": "Advance with the shop",
+    "clear": "Nothing due",
+    "pay": "Pay via UPI",
+    "entries": "Your khata",
+    "balance": "Balance",
+    "noEntries": "No entries yet.",
+    "truncated": "Only the latest entries are shown. Ask the shop for the full statement.",
+    "readOnly": "Read-only khata · updated {{date}}",
+    "invalidTitle": "This link does not work",
+    "invalidHint": "It may have been turned off. Please ask the shop for a new link."
   }
 }

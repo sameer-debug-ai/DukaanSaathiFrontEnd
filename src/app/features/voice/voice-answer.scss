@@ -235,3 +235,67 @@ li button {
   max-height: 46vh;
   overflow-y: auto;
 }
+
+/* ---------- Analytics ---------- */
+.an-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.an-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.stat .sub {
+  margin-top: 2px;
+}
+.an-chart {
+  position: relative;
+  width: 100%;
+}
+.an-table-wrap {
+  max-height: 40vh;
+  overflow: auto;
+  border: 1px solid var(--ds-line);
+  border-radius: 12px;
+}
+.an-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  th,
+  td {
+    padding: 9px 12px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  th {
+    position: sticky;
+    top: 0;
+    background: var(--ds-surface);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ds-muted);
+  }
+  td:first-child {
+    white-space: normal;
+    font-weight: 600;
+  }
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  tbody tr + tr td {
+    border-top: 1px solid var(--ds-line);
+  }
+  tr.clickable {
+    cursor: pointer;
+    &:hover td {
+      background: var(--ds-surface);
+    }
+  }
+}

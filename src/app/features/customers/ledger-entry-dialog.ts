@@ -65,6 +65,9 @@ export interface LedgerEntryData {
         @if (overLimit()) {
           <p class="text-warn">{{ 'ledger.overLimit' | translate: { limit: (data.customer.creditLimit ?? 0) | inr } }}</p>
         }
+        @if (isCredit && data.customer.credit?.badge === 'risky') {
+          <p class="text-warn">{{ 'credit.riskyWarning' | translate }}</p>
+        }
       </mat-dialog-content>
       <mat-dialog-actions align="end">
         <button mat-button type="button" mat-dialog-close>{{ 'common.cancel' | translate }}</button>

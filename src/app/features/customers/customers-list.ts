@@ -9,6 +9,7 @@ import type { Customer } from '../../core/models/domain.models';
 import { AppEvents } from '../../core/services/app-events.service';
 import { CustomersApi } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
+import { CreditBadgeComponent } from '../../shared/components/credit-badge/credit-badge';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { SearchBox } from '../../shared/components/search-box/search-box';
@@ -22,7 +23,7 @@ type Filter = 'all' | 'due' | 'clear';
 
 @Component({
   selector: 'app-customers-list',
-  imports: [NgTemplateOutlet, MatButton, MatSelectModule, TranslatePipe, PageHeader, SearchBox, Skeleton, EmptyState, StatCard, InrPipe, IstDatePipe],
+  imports: [NgTemplateOutlet, MatButton, MatSelectModule, TranslatePipe, PageHeader, SearchBox, Skeleton, EmptyState, StatCard, InrPipe, IstDatePipe, CreditBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="ds-page">
@@ -76,7 +77,12 @@ type Filter = 'all' | 'due' | 'clear';
                     <div class="flex items-center gap-3">
                       <span class="ds-avatar">{{ initials(c.name) }}</span>
                       <div>
-                        <div class="font-semibold">{{ c.name }}</div>
+                        <div class="font-semibold">
+                          {{ c.name }}
+                          @if (c.currentBalance > 0) {
+                            <app-credit-badge [credit]="c.credit" />
+                          }
+                        </div>
                         @if (c.aliases.length) {
                           <div class="text-sm text-muted">{{ c.aliases.join(', ') }}</div>
                         }
@@ -98,7 +104,12 @@ type Filter = 'all' | 'due' | 'clear';
               <button type="button" class="ds-list-item" (click)="open(c)">
                 <span class="ds-avatar">{{ initials(c.name) }}</span>
                 <div class="flex-1 min-w-0">
-                  <div class="title">{{ c.name }}</div>
+                  <div class="title">
+                    {{ c.name }}
+                    @if (c.currentBalance > 0 && c.credit && c.credit.badge !== 'new') {
+                      <app-credit-badge [credit]="c.credit" />
+                    }
+                  </div>
                   <div class="sub">{{ c.lastTransactionAt ? ('customers.lastTxn' | translate: { date: (c.lastTransactionAt | istDate) }) : (c.phone || '—') }}</div>
                 </div>
                 <ng-container *ngTemplateOutlet="bal; context: { $implicit: c }" />

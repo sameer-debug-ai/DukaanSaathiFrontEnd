@@ -211,3 +211,21 @@
   --mdc-filled-button-container-color: var(--ds-ok);
   --mat-button-filled-container-color: var(--ds-ok);
 }
+
+.credit-warn {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ds-warn-soft);
+  color: var(--ds-warn);
+  font-weight: 600;
+  p {
+    margin: 0;
+  }
+  p + p {
+    margin-top: 4px;
+  }
+}

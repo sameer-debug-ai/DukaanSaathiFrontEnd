@@ -18,8 +18,12 @@
       @case ('parsing') {
         <div class="center">
           <mat-progress-spinner mode="indeterminate" diameter="48" />
-          <p class="heard">“{{ text() }}”</p>
-          <p class="text-muted">{{ 'voice.understanding' | translate }}</p>
+          @if (transcribing()) {
+            <p class="text-muted">{{ 'voice.stt.transcribing' | translate }}</p>
+          } @else {
+            <p class="heard">“{{ text() }}”</p>
+            <p class="text-muted">{{ 'voice.understanding' | translate }}</p>
+          }
         </div>
       }
       @case ('confirm') {
@@ -29,7 +33,7 @@
         } @else {
           <app-voice-confirm [result]="result()!" (confirmed)="onConfirm($event)" (cancelled)="onCancel()" />
         }
-        @if (result()!.engine === 'rules') {
+        @if (result()!.engine === 'rules' && result()!.parsePath !== 'rule') {
           <p class="engine">{{ 'voice.offlineParser' | translate }}</p>
         }
       }
@@ -85,13 +89,20 @@
       @default {
         <!-- idle / listening -->
         <div class="center">
-          @if (speech.supported) {
+          @if (stt.canListen()) {
             <button type="button" class="mic" [class.on]="stage() === 'listening'" (click)="stage() === 'listening' ? stopListening() : listen()"
               [attr.aria-label]="(stage() === 'listening' ? 'voice.stop' : 'voice.tapToSpeak') | translate">
               <span class="material-symbols-outlined icon-filled">{{ stage() === 'listening' ? 'graphic_eq' : 'mic' }}</span>
             </button>
-            <p class="status">{{ (stage() === 'listening' ? 'voice.listening' : 'voice.tapToSpeak') | translate }}</p>
-            @if (speech.transcript() || speech.interim()) {
+            @if (recorder.recording()) {
+              <p class="status" aria-live="polite">{{ 'voice.stt.recording' | translate: { s: recorder.seconds(), max: maxSeconds } }}</p>
+            } @else {
+              <p class="status">{{ (stage() === 'listening' ? 'voice.listening' : 'voice.tapToSpeak') | translate }}</p>
+            }
+            @if (stt.useRecorder()) {
+              <p class="ds-badge info">{{ 'voice.stt.badge' | translate }}</p>
+            }
+            @if (!stt.useRecorder() && (speech.transcript() || speech.interim())) {
               <p class="heard live" aria-live="polite">{{ speech.transcript() }} <span class="text-muted">{{ speech.interim() }}</span></p>
             }
             @if (errorKey(); as k) {

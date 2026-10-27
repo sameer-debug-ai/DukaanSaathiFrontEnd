@@ -67,6 +67,24 @@
     <button mat-flat-button type="submit">{{ 'common.save' | translate }}</button>
   </form>
 
+  <!-- UPI payments -->
+  <form class="ds-card p-4 mb-4" [formGroup]="upiForm" (ngSubmit)="saveUpi()" novalidate>
+    <h2 class="text-lg font-semibold mt-0 mb-2">{{ 'settings.upi' | translate }}</h2>
+    <p class="text-sm text-muted mt-0">{{ 'settings.upiHint' | translate }}</p>
+    <div class="grid gap-x-4 sm:grid-cols-2">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'settings.upiId' | translate }}</mat-label>
+        <input matInput formControlName="upiId" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="shopname@okaxis" inputmode="email" />
+        <mat-error>{{ 'settings.upiIdInvalid' | translate }}</mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'settings.upiPayeeName' | translate }}</mat-label>
+        <input matInput formControlName="upiPayeeName" [placeholder]="auth.user()?.shopName ?? ''" />
+      </mat-form-field>
+    </div>
+    <button mat-flat-button type="submit">{{ 'common.save' | translate }}</button>
+  </form>
+
   <!-- Voice assistant -->
   <div class="ds-card p-4 mb-4">
     <h2 class="text-lg font-semibold mt-0 mb-2">{{ 'settings.voice' | translate }}</h2>
@@ -85,6 +103,24 @@
         <div class="text-sm text-muted">{{ 'settings.voiceRepliesHint' | translate }}</div>
       </div>
       <mat-slide-toggle [checked]="voiceReplies.enabled()" (change)="voiceReplies.setEnabled($event.checked)" [attr.aria-label]="'settings.voiceReplies' | translate" />
+    </div>
+
+    <div class="flex items-start justify-between gap-4 mt-4">
+      <div>
+        <div class="font-medium">{{ 'settings.highAccuracy' | translate }}</div>
+        <div class="text-sm text-muted">{{ 'settings.highAccuracyHint' | translate }}</div>
+        @if (voiceStt.serverAvailable() === false) {
+          <div class="text-sm text-warn mt-1">{{ 'settings.highAccuracyOff' | translate }}</div>
+        } @else if (!voiceStt.recorder.supported) {
+          <div class="text-sm text-warn mt-1">{{ 'settings.highAccuracyNoMic' | translate }}</div>
+        }
+      </div>
+      <mat-slide-toggle
+        [checked]="voiceStt.highAccuracy()"
+        (change)="voiceStt.setHighAccuracy($event.checked)"
+        [disabled]="voiceStt.serverAvailable() === false || !voiceStt.recorder.supported"
+        [attr.aria-label]="'settings.highAccuracy' | translate"
+      />
     </div>
 
     <form [formGroup]="voiceForm" (ngSubmit)="saveVoice()" class="mt-4">

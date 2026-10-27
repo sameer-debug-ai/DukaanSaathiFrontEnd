@@ -57,6 +57,73 @@ export interface Customer {
   currentBalance: number;
   lastTransactionAt?: string;
   createdAt: string;
+  /** Reminder every N days (0 = off). */
+  reminderEveryDays?: 0 | 7 | 15 | 30;
+  /** Promised payment day (ISO). */
+  dueDate?: string | null;
+  lastReminderAt?: string | null;
+  /** Credit score from the payment history (list and detail). */
+  credit?: CreditScore;
+}
+
+export type CreditBadge = 'good' | 'average' | 'risky' | 'new';
+
+export interface CreditScore {
+  /** 0-100; null for a new customer. */
+  score: number | null;
+  badge: CreditBadge;
+  recoveredPct: number;
+  avgDaysToPay: number | null;
+  oldestDueDays: number | null;
+}
+
+/** New udhaar would cross the credit limit, or the customer is "Risky". */
+export interface CreditWarning {
+  customerId: string;
+  overLimit: boolean;
+  limit: number | null;
+  balance: number;
+  newBalance: number;
+  badge: CreditBadge;
+  score: number | null;
+}
+
+export interface ReminderItem {
+  customerId: string;
+  name: string;
+  phone: string;
+  balance: number;
+  reason: 'due_date' | 'every';
+  dueDate: string | null;
+  lastReminderAt: string | null;
+  upiLink: string | null;
+}
+
+export interface TodayReminders {
+  day: string;
+  items: ReminderItem[];
+  sentToday: number;
+}
+
+export interface KhataLinkStatus {
+  active: boolean;
+  createdAt: string | null;
+  lastViewedAt: string | null;
+  views: number;
+  /** Only right after creating: the link token (stored hashed on the server). */
+  token?: string;
+}
+
+/** What the customer sees on their public khata page. */
+export interface PublicKhata {
+  shop: { name: string; phone: string; address: string };
+  customer: { name: string };
+  balance: number;
+  entries: { date: string; type: 'credit' | 'payment'; amount: number; note: string; items: { name: string; qty: number }[]; balance: number }[];
+  truncated: boolean;
+  upiLink: string | null;
+  upiId: string | null;
+  generatedAt: string;
 }
 
 export interface CustomerDetail extends Customer {
@@ -205,7 +272,7 @@ export interface DashboardCharts {
   udhaar: { day: string; given: number; recovered: number }[];
 }
 
-export type ReportName = 'sales' | 'profit' | 'udhaar' | 'supplier-purchases' | 'stock-valuation' | 'product-sales';
+export type ReportName = 'sales' | 'profit' | 'udhaar' | 'supplier-purchases' | 'stock-valuation' | 'product-sales' | 'aging';
 
 export interface Report {
   title: string;
@@ -238,6 +305,7 @@ export type Intent =
   | 'query_balance'
   | 'query_stock'
   | 'query_summary'
+  | 'query_analytics'
   | 'undo_last'
   | 'reset_context'
   | 'unknown';
@@ -270,6 +338,8 @@ export interface VoiceParseResult {
   text: string;
   engine: 'ai' | 'rules';
   engineNote?: string;
+  /** rule = local fast parser (no AI call), ai = the AI, offline = offline parser. */
+  parsePath?: 'rule' | 'ai' | 'offline';
   intent: Intent;
   confidence: number;
   parsed: {
@@ -307,6 +377,8 @@ export interface VoiceParseResult {
   autoSave?: boolean;
   /** Several entries in one sentence: each one resolved (top-level fields repeat the first). Saved together. */
   actions?: VoiceParseResult[];
+  /** Udhaar over the credit limit / for a "Risky" customer: shown on the card, never auto-saved. */
+  creditWarning?: CreditWarning;
 }
 
 /** What one action of a multi-action voice command saved (POST /ai/execute-batch). */
@@ -337,7 +409,32 @@ export type VoiceAnswerData =
   | { kind: 'balance'; customerId: string; name: string; balance: number }
   | { kind: 'summary'; period: string; from: string; to: string; sales: number; bills: number; udhaarGiven: number; paymentsReceived: number }
   | { kind: 'choose'; choose: Candidate[] }
-  | { kind: 'undo'; logId: string | null; text: string };
+  | { kind: 'undo'; logId: string | null; text: string }
+  | VoiceAnalyticsData;
+
+export type VoiceAnalyticsFn = 'top_products' | 'inactive_debtors' | 'compare_sales' | 'profit' | 'top_debtors';
+export type VoiceAnalyticsPeriod = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month';
+
+/** Answer to a voice analytics question ("Is mahine sabse zyada kya bika?"): a small table, maybe a chart. Money in paise. */
+export interface VoiceAnalyticsData {
+  kind: 'analytics';
+  fn: VoiceAnalyticsFn;
+  period?: VoiceAnalyticsPeriod;
+  from?: string;
+  to?: string;
+  days?: number;
+  columns: { key: string; type: 'text' | 'money' | 'number' | 'date' }[];
+  rows: Record<string, unknown>[];
+  totals?: Record<string, number>;
+  chart?: { labels: string[]; data: number[]; money: boolean };
+}
+
+export interface AiStatus {
+  provider: string;
+  available: boolean;
+  /** High-accuracy speech-to-text on the server. */
+  stt?: { provider: string; available: boolean };
+}
 
 export interface VoiceLog {
   id: string;

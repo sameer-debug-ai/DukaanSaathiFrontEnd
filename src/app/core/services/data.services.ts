@@ -2,6 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type { Paged } from '../models/api.models';
 import type {
+  AiStatus,
+  KhataLinkStatus,
+  PublicKhata,
+  TodayReminders,
   Customer,
   CustomerDetail,
   CustomerLedger,
@@ -90,6 +94,9 @@ export interface CustomerInput {
   phone?: string;
   address?: string;
   creditLimit?: number;
+  reminderEveryDays?: 0 | 7 | 15 | 30;
+  /** "YYYY-MM-DD"; null clears it. */
+  dueDate?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -118,6 +125,37 @@ export class CustomersApi {
   }
   addPayment(id: string, body: { amount: number; mode: PaymentMode; note?: string; date?: string; source?: 'manual' | 'voice'; rawVoiceText?: string } & VoiceLink) {
     return this.api.post<{ entry: LedgerEntry; customer: Customer }>(`/customers/${id}/ledger/payment`, body);
+  }
+  /** A payment reminder was sent (WhatsApp); drops them from "Aaj ke reminders". */
+  reminderSent(id: string) {
+    return this.api.post<Customer>(`/customers/${id}/reminder-sent`);
+  }
+  shareLink(id: string) {
+    return this.api.get<KhataLinkStatus>(`/customers/${id}/share-link`);
+  }
+  /** New public khata link; the old one stops working. The token comes back only here. */
+  createShareLink(id: string) {
+    return this.api.post<KhataLinkStatus & { token: string }>(`/customers/${id}/share-link`);
+  }
+  revokeShareLink(id: string) {
+    return this.api.delete<KhataLinkStatus>(`/customers/${id}/share-link`);
+  }
+}
+
+@Injectable({ providedIn: 'root' })
+export class RemindersApi {
+  private readonly api = inject(ApiService);
+  today() {
+    return this.api.get<TodayReminders>('/reminders/today');
+  }
+}
+
+/** No login: the customer's own khata page. */
+@Injectable({ providedIn: 'root' })
+export class PublicKhataApi {
+  private readonly api = inject(ApiService);
+  get(token: string) {
+    return this.api.get<PublicKhata>(`/public/khata/${encodeURIComponent(token)}`);
   }
 }
 
@@ -264,7 +302,11 @@ export class VoiceApi {
     return this.api.post<VoiceParseResult>('/ai/parse-command', { text, lang });
   }
   status() {
-    return this.api.get<{ provider: string; available: boolean }>('/ai/status');
+    return this.api.get<AiStatus>('/ai/status');
+  }
+  /** High-accuracy speech-to-text: the recording goes up as raw audio, the text comes back. */
+  transcribe(audio: Blob, lang: 'hi' | 'en') {
+    return this.api.post<{ text: string; provider: string }>(`/ai/transcribe?lang=${lang}`, audio);
   }
   logs(params: QueryParams) {
     return this.api.getPaged<VoiceLog>('/voice-logs', params);

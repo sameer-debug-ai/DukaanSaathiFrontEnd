@@ -1,13 +1,14 @@
 import { formatPaise } from '../../shared/pipes/inr.pipe';
 
 /** Polite payment reminder in the UI language (Hindi by default for customers). */
-export function reminderMessage(opts: { customerName: string; amount: number; shopName: string; shopPhone?: string; lang: 'hi' | 'en' }): string {
+export function reminderMessage(opts: { customerName: string; amount: number; shopName: string; shopPhone?: string; lang: 'hi' | 'en'; upiLink?: string | null }): string {
   const amount = formatPaise(opts.amount);
   if (opts.lang === 'en') {
     return (
       `Namaste ${opts.customerName} ji,\n` +
       `This is a gentle reminder from ${opts.shopName}. Your pending balance is ${amount}.\n` +
       `Please pay at your convenience (cash or UPI). Thank you!` +
+      (opts.upiLink ? `\nPay by UPI: ${opts.upiLink}` : '') +
       (opts.shopPhone ? `\n- ${opts.shopName}, ${opts.shopPhone}` : '')
     );
   }
@@ -15,6 +16,7 @@ export function reminderMessage(opts: { customerName: string; amount: number; sh
     `नमस्ते ${opts.customerName} जी,\n` +
     `${opts.shopName} की ओर से विनम्र निवेदन है कि आपके खाते में ${amount} बाकी हैं।\n` +
     `सुविधा अनुसार भुगतान (नकद या UPI) कर दें। धन्यवाद! 🙏` +
+    (opts.upiLink ? `\nUPI से भुगतान करें: ${opts.upiLink}` : '') +
     (opts.shopPhone ? `\n- ${opts.shopName}, ${opts.shopPhone}` : '')
   );
 }

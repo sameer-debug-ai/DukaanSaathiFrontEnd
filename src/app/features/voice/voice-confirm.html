@@ -207,6 +207,20 @@
     </div>
   }
 
+  @if (creditWarning(); as w) {
+    <div class="credit-warn" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+      <div>
+        @if (w.overLimit) {
+          <p>{{ 'credit.overLimit' | translate: { limit: (w.limit ?? 0 | inr), balance: (w.newBalance | inr) } }}</p>
+        }
+        @if (w.badge === 'risky') {
+          <p>{{ 'credit.riskyWarning' | translate }}</p>
+        }
+      </div>
+    </div>
+  }
+
   @if (problems().length && editing()) {
     <ul class="problems">
       @for (p of problems(); track p) {

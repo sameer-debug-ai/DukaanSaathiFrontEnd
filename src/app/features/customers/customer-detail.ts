@@ -21,11 +21,15 @@ import { InrPipe } from '../../shared/pipes/inr.pipe';
 import { IstDatePipe } from '../../shared/pipes/ist-date.pipe';
 import { CustomerFormDialog } from './customer-form-dialog';
 import { LedgerEntryDialog } from './ledger-entry-dialog';
+import { CreditBadgeComponent } from '../../shared/components/credit-badge/credit-badge';
+import { qrDataUrl, shopStaticUpiLink, shopUpiLink } from '../../core/utils/upi';
+import { KhataLinkCard } from './khata-link-card';
 import { reminderMessage } from './reminder';
+import { UpiQrDialog } from './upi-qr-dialog';
 
 @Component({
   selector: 'app-customer-detail',
-  imports: [RouterLink, MatButton, MatIconButton, MatMenuModule, TranslatePipe, PageHeader, Skeleton, EmptyState, InrPipe, IstDatePipe, AliasChips],
+  imports: [RouterLink, MatButton, MatIconButton, MatMenuModule, TranslatePipe, PageHeader, Skeleton, EmptyState, InrPipe, IstDatePipe, AliasChips, CreditBadgeComponent, KhataLinkCard],
   templateUrl: './customer-detail.html',
   styleUrl: './customer-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,7 +43,7 @@ export class CustomerDetailPage {
   private readonly events = inject(AppEvents);
   private readonly share = inject(ShareService);
   private readonly pdf = inject(PdfService);
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   private readonly lang = inject(LanguageService);
   private readonly router = inject(Router);
   private readonly t = inject(TranslateService);
@@ -107,8 +111,32 @@ export class CustomerDetailPage {
     if (!c || !shop) return '#';
     return this.share.whatsappUrl(
       c.phone,
-      reminderMessage({ customerName: c.name, amount: c.currentBalance, shopName: shop.shopName, shopPhone: shop.phone, lang: this.lang.current() }),
+      reminderMessage({ customerName: c.name, amount: c.currentBalance, shopName: shop.shopName, shopPhone: shop.phone, lang: this.lang.current(), upiLink: this.upiLink() }),
     );
+  }
+
+  /** upi://pay link for the pending balance (null without a UPI ID in Settings or nothing due). */
+  protected readonly upiLink = computed(() => {
+    const c = this.customer();
+    const shop = this.auth.user();
+    if (!c || !shop || c.currentBalance <= 0) return null;
+    return shopUpiLink(shop.settings, shop.shopName, c.currentBalance, `Udhaar ${c.name}`);
+  });
+
+  /** Remembers the reminder (for "Aaj ke reminders"); the WhatsApp link itself opens as before. */
+  protected reminderSent(): void {
+    const c = this.customer();
+    if (!c || c.currentBalance <= 0) return;
+    this.api.reminderSent(c.id).subscribe({ next: (u) => this.customer.set({ ...c, lastReminderAt: u.lastReminderAt }), error: () => undefined });
+  }
+
+  protected showQr(): void {
+    const c = this.customer();
+    const link = this.upiLink();
+    if (!c || !link) return;
+    const shop = this.auth.user()!;
+    const staticLink = shopStaticUpiLink(shop.settings, shop.shopName) ?? link;
+    this.dialog.open(UpiQrDialog, { data: { name: c.name, amount: c.currentBalance, link, staticLink, vpa: shop.settings.upiId! }, width: '380px', maxWidth: '96vw', autoFocus: false });
   }
 
   protected async statement(): Promise<void> {
@@ -116,7 +144,9 @@ export class CustomerDetailPage {
     if (!l) return;
     this.pdfBusy.set(true);
     try {
-      const file = await this.pdf.customerStatement(l);
+      const link = l.closingBalance > 0 ? this.upiLink() : null;
+      const upi = link ? { link, qr: await qrDataUrl(link, 240), vpa: this.auth.user()!.settings.upiId! } : undefined;
+      const file = await this.pdf.customerStatement(l, undefined, undefined, upi);
       this.share.download(file, file.name);
     } catch {
       this.toast.error('common.genericError');

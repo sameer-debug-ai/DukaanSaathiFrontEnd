@@ -26,6 +26,7 @@ const REPORTS: { id: ReportName; key: string; icon: string; ranged: boolean }[] 
   { id: 'supplier-purchases', key: 'reports.supplier', icon: 'local_shipping', ranged: true },
   { id: 'product-sales', key: 'reports.productSales', icon: 'shopping_bag', ranged: true },
   { id: 'stock-valuation', key: 'reports.stock', icon: 'inventory', ranged: false },
+  { id: 'aging', key: 'reports.aging', icon: 'hourglass_bottom', ranged: false },
 ];
 
 /** Headline tiles per report, picked from the report totals. */
@@ -59,6 +60,12 @@ const TILES: Record<ReportName, { key: string; total: string; tone: StatTone; ic
   'stock-valuation': [
     { key: 'reports.t.atCost', total: 'costValue', tone: 'brand', icon: 'inventory' },
     { key: 'reports.t.atSale', total: 'saleValue', tone: 'ok', icon: 'sell' },
+  ],
+  aging: [
+    { key: 'reports.t.outstanding', total: 'balance', tone: 'warn', icon: 'menu_book' },
+    { key: 'reports.t.d31_60', total: 'd31_60', tone: 'warn', icon: 'schedule' },
+    { key: 'reports.t.d61_90', total: 'd61_90', tone: 'danger', icon: 'hourglass_bottom' },
+    { key: 'reports.t.d90_plus', total: 'd90_plus', tone: 'danger', icon: 'error' },
   ],
 };
 

@@ -30,6 +30,10 @@ export interface ShopSettings {
   voiceAutoSaveThreshold?: number;
   /** Seconds a saved voice entry can be undone. */
   voiceUndoSeconds?: number;
+  /** Shop's UPI ID (VPA) for "Pay via UPI" links and QR codes. */
+  upiId?: string;
+  /** Name shown in the customer's UPI app (defaults to the shop name). */
+  upiPayeeName?: string;
 }
 
 export interface User {

@@ -17,6 +17,9 @@
           <div class="text">
             <span class="intent">{{ ('voice.intent.' + row.cmd.intent) | translate }}</span>
             <p class="summary">{{ summary(row) }}</p>
+            @if (row.result.creditWarning && row.result.creditWarning.customerId === row.cmd.customerId) {
+              <p class="problem"><span class="material-symbols-outlined" aria-hidden="true">warning</span>{{ (row.result.creditWarning.overLimit ? 'credit.overLimitShort' : 'credit.riskyShort') | translate }}</p>
+            }
             @for (p of problemsByKey().get(row.key); track p) {
               <p class="problem"><span class="material-symbols-outlined" aria-hidden="true">error</span>{{ p | translate }}</p>
             }
