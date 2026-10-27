@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { TranslateLoader, TranslateService, type Language, type TranslationObject } from '@ngx-translate/core';
-import { Observable, catchError, map, of, shareReplay, switchMap, throwError } from 'rxjs';
-import type { Unit, VoiceParseResult } from '../../core/models/domain.models';
-import { CustomersApi, ProductsApi, SalesApi, SuppliersApi, VoiceApi, type AliasLearning } from '../../core/services/data.services';
+import { Observable, catchError, forkJoin, map, of, shareReplay, switchMap, throwError } from 'rxjs';
+import type { Unit, VoiceBatchOutcome, VoiceParseResult } from '../../core/models/domain.models';
+import { CustomersApi, ProductsApi, SalesApi, SuppliersApi, VoiceApi, type AliasLearning, type VoiceBatchAction } from '../../core/services/data.services';
 import { formatPaise } from '../../shared/pipes/inr.pipe';
 
 /** What the confirmation card hands over after the user has reviewed / edited it. */
@@ -160,6 +160,64 @@ export class VoiceExecutor {
   learn(items: AliasLearning[] | undefined): void {
     const useful = (items ?? []).filter((i) => i.alias.trim() && i.id);
     if (useful.length) this.voice.learnAliases(useful.slice(0, 20)).subscribe({ error: () => undefined });
+  }
+
+  /**
+   * Saves every action of a multi-action command in one go (one transaction on the server,
+   * one Undo for the group). Resolves to the per-action success messages, in `lang`.
+   */
+  executeBatch(
+    cmds: ConfirmedCommand[],
+    lang: Language = this.t.getCurrentLang(),
+  ): Observable<{ messages: string[]; outcomes: VoiceBatchOutcome[] }> {
+    const first = cmds[0];
+    if (!first?.logId) return of({ messages: [], outcomes: [] });
+    const actions: VoiceBatchAction[] = cmds.map((c) => ({
+      intent: c.intent,
+      customerId: c.customerId,
+      newCustomerName: c.customerId ? undefined : c.newCustomerName?.trim() || undefined,
+      supplierId: c.supplierId,
+      productId: c.productId,
+      productName: c.productName,
+      amount: c.amount,
+      paidAmount: c.paidAmount,
+      quantity: c.quantity,
+      unit: c.unit,
+      sellingPrice: c.sellingPrice,
+      paymentMode: c.paymentMode,
+      date: c.date,
+      items: c.items,
+    }));
+    return this.voice.executeBatch({ logId: first.logId, text: first.text, note: this.t.instant('voice.noteVoice'), actions }).pipe(
+      switchMap((outcomes) => forkJoin(outcomes.map((o) => this.outcomeMessage(o, lang))).pipe(map((messages) => ({ messages, outcomes })))),
+    );
+  }
+
+  private outcomeMessage(o: VoiceBatchOutcome, lang: Language): Observable<string> {
+    const amount = formatPaise(o.amount);
+    switch (o.intent) {
+      case 'add_credit':
+        return this.done(lang, 'voice.done.credit', { amount, name: o.name });
+      case 'receive_payment':
+        return this.done(lang, 'voice.done.payment', { amount, name: o.name });
+      case 'add_purchase':
+        return this.done(lang, 'voice.done.purchase', { amount, name: o.name });
+      case 'supplier_payment':
+        return this.done(lang, 'voice.done.supplierPayment', { amount, name: o.name });
+      case 'add_sale':
+        return this.done(lang, 'voice.done.sale', { number: o.billNumber, amount });
+      case 'adjust_stock':
+        return this.done(lang, 'voice.done.stock', { name: o.name, qty: o.stock, unit: o.unit });
+      case 'add_product':
+        return this.done(lang, 'voice.done.product', { name: o.name, amount });
+      default:
+        return of('');
+    }
+  }
+
+  /** `key` translated in `lang` (which may differ from the app's language), e.g. for spoken replies. */
+  translateIn(lang: Language, key: string, params: Record<string, unknown> = {}): Observable<string> {
+    return this.done(lang, key, params);
   }
 
   /** Translates `key` in a given language without switching the whole app to it. */

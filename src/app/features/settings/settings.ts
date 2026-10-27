@@ -17,6 +17,7 @@ import { ThemeService } from '../../core/services/theme.service';
 import { ToastService } from '../../core/services/toast.service';
 import { istDay } from '../../core/utils/format';
 import { PageHeader } from '../../shared/components/page-header/page-header';
+import { VoiceReplies } from '../voice/voice-replies.service';
 
 @Component({
   selector: 'app-settings',
@@ -29,6 +30,8 @@ export class Settings implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly settingsApi = inject(SettingsApi);
   private readonly voiceApi = inject(VoiceApi);
+  /** Spoken replies are a per-device choice (the speaker may be shared), so not part of the shop settings. */
+  protected readonly voiceReplies = inject(VoiceReplies);
   private readonly share = inject(ShareService);
   private readonly events = inject(AppEvents);
   private readonly alerts = inject(StockAlertsService);

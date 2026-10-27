@@ -44,3 +44,26 @@ export function toConfirmedCommand(r: VoiceParseResult): ConfirmedCommand {
     items,
   };
 }
+
+/**
+ * What still has to be filled in before a command can be saved (translation keys), using the
+ * same rules as the confirmation card. Used for the rows of a multi-action command.
+ */
+export function commandProblems(c: ConfirmedCommand): string[] {
+  const p: string[] = [];
+  const needsCustomer = c.intent === 'add_credit' || c.intent === 'receive_payment' || (c.intent === 'add_sale' && c.paymentMode === 'udhaar');
+  if (needsCustomer && !c.customerId && !c.newCustomerName?.trim()) p.push('voice.err.customer');
+  if ((c.intent === 'add_purchase' || c.intent === 'supplier_payment') && !c.supplierId) p.push('voice.err.supplier');
+  if (['add_credit', 'receive_payment', 'supplier_payment', 'add_purchase'].includes(c.intent) && !c.amount) p.push('voice.err.amount');
+  if (c.intent === 'add_sale' && (!c.items.length || c.items.some((i) => !i.productId))) p.push('voice.err.products');
+  if (c.intent === 'add_purchase' && c.items.some((i) => i.rate === null)) p.push('voice.err.rate');
+  if (c.intent === 'adjust_stock') {
+    if (!c.productId) p.push('voice.err.product');
+    if (!c.quantity) p.push('voice.err.quantity');
+  }
+  if (c.intent === 'add_product') {
+    if (!c.productName?.trim()) p.push('voice.err.productName');
+    if (!c.sellingPrice) p.push('voice.err.price');
+  }
+  return p;
+}

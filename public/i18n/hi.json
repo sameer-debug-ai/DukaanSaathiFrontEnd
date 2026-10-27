@@ -553,7 +553,9 @@
     "thresholdLoose": "काफ़ी पक्का",
     "voiceUndo": "वापस लेने का समय",
     "voiceUndoHint": "सेव के बाद कितनी देर तक आवाज़ वाली एंट्री वापस ले सकते हैं, Undo बटन से या “गलती हो गई” बोलकर।",
-    "seconds": "{{n}} सेकंड"
+    "seconds": "{{n}} सेकंड",
+    "voiceReplies": "आवाज़ में जवाब",
+    "voiceRepliesHint": "हर आवाज़ वाले काम के बाद छोटा सा जवाब बोलकर सुनाएँ (इस फ़ोन/डिवाइस पर)।"
   },
   "more": {
     "title": "और"
@@ -624,7 +626,8 @@
       "query_stock": "स्टॉक पूछा",
       "query_summary": "बिक्री सारांश",
       "unknown": "समझ नहीं आया",
-      "undo_last": "पिछली एंट्री वापस"
+      "undo_last": "पिछली एंट्री वापस",
+      "reset_context": "नई बातचीत"
     },
     "status": {
       "confirmed": "सेव हुआ",
@@ -673,7 +676,27 @@
     },
     "undo": "वापस लें",
     "undoLong": "यह एंट्री वापस लें",
-    "undoneMsg": "वापस लिया: “{{text}}”"
+    "undoneMsg": "वापस लिया: “{{text}}”",
+    "multi": {
+      "count": "{{n}} एंट्री",
+      "saveAll": "सब सेव करो",
+      "remove": "एंट्री हटाएँ",
+      "editing": "{{total}} में से एंट्री {{n}} बदल रहे हैं। बदलाव रखने के लिए \"हाँ\" दबाएँ।",
+      "fixFirst": "सेव करने के लिए निशान वाली एंट्री ठीक करें (बदलें) या हटा दें।"
+    },
+    "speak": {
+      "saved": "ठीक है, {{msg}}।",
+      "savedPlain": "Done, it is saved.",
+      "balance": "ठीक है, {{name}} का कुल उधार अब {{amount}} रुपये हो गया।",
+      "balanceClear": "ठीक है, {{name}} का अब कोई उधार बाकी नहीं है।",
+      "balanceShort": "{{name}} का कुल उधार अब {{amount}} रुपये है।",
+      "balanceClearShort": "{{name}} का कोई उधार बाकी नहीं।",
+      "batch": "ठीक है, {{count}} एंट्री सेव हो गईं।",
+      "undone": "ठीक है, पिछली एंट्री हटा दी।",
+      "error": "माफ़ कीजिए, सेव नहीं हुआ। {{msg}}",
+      "errorPlain": "Sorry, it could not be saved. Please check the screen.",
+      "notUnderstood": "समझ नहीं आया, दोबारा बोलिए।"
+    }
   },
   "aliases": {
     "title": "दूसरे नाम (आवाज़ और खोज)",

@@ -553,7 +553,9 @@
     "thresholdLoose": "Fairly sure",
     "voiceUndo": "Undo time",
     "voiceUndoHint": "How long after saving a voice entry can be undone, with the Undo button or by saying “galti ho gayi”.",
-    "seconds": "{{n}} sec"
+    "seconds": "{{n}} sec",
+    "voiceReplies": "Voice replies",
+    "voiceRepliesHint": "Speak a short reply after each voice command (on this device)."
   },
   "more": {
     "title": "More"
@@ -624,7 +626,8 @@
       "query_stock": "Stock query",
       "query_summary": "Sales summary",
       "unknown": "Not understood",
-      "undo_last": "Undo last"
+      "undo_last": "Undo last",
+      "reset_context": "New conversation"
     },
     "status": {
       "confirmed": "Saved",
@@ -673,7 +676,27 @@
     },
     "undo": "Undo",
     "undoLong": "Undo this entry",
-    "undoneMsg": "Undone: “{{text}}”"
+    "undoneMsg": "Undone: “{{text}}”",
+    "multi": {
+      "count": "{{n}} entries",
+      "saveAll": "Save all",
+      "remove": "Remove entry",
+      "editing": "Editing entry {{n}} of {{total}}. Tap Yes to keep the changes.",
+      "fixFirst": "Fix the marked entries (Edit) or remove them to save."
+    },
+    "speak": {
+      "saved": "Done. {{msg}}.",
+      "savedPlain": "Done, it is saved.",
+      "balance": "Done. {{name}}'s total udhaar is now {{amount}} rupees.",
+      "balanceClear": "Done. {{name}} has no udhaar left now.",
+      "balanceShort": "{{name}}'s total udhaar is now {{amount}} rupees.",
+      "balanceClearShort": "{{name}} has no udhaar left.",
+      "batch": "Done. {{count}} entries saved.",
+      "undone": "Okay, the last entry is removed.",
+      "error": "Sorry, it could not be saved. {{msg}}",
+      "errorPlain": "Sorry, it could not be saved. Please check the screen.",
+      "notUnderstood": "Sorry, I didn't get that. Please say it again."
+    }
   },
   "aliases": {
     "title": "Other names (voice & search)",

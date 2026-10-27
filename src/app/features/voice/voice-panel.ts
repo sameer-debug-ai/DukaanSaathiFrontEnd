@@ -8,7 +8,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { VoiceParseResult } from '../../core/models/domain.models';
 import { apiErrorMessage } from '../../core/services/api.service';
 import { AppEvents, StockAlertsService } from '../../core/services/app-events.service';
-import { VoiceApi } from '../../core/services/data.services';
+import { CustomersApi, VoiceApi } from '../../core/services/data.services';
 import { LanguageService } from '../../core/services/language.service';
 import { SpeechService, type SpeechLang } from '../../core/services/speech.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -17,6 +17,8 @@ import { VoiceAnswer } from './voice-answer';
 import { VoiceConfirm } from './voice-confirm';
 import { toConfirmedCommand } from './voice-command';
 import { VoiceExecutor, type ConfirmedCommand } from './voice-executor.service';
+import { VoiceMultiConfirm } from './voice-multi-confirm';
+import { VoiceReplies } from './voice-replies.service';
 import { VoiceUndo } from './voice-undo.service';
 
 type Stage = 'idle' | 'listening' | 'parsing' | 'confirm' | 'saving' | 'done' | 'answer';
@@ -32,15 +34,15 @@ const EXAMPLES = [
   'kya kya khatam hone wala hai?',
   'aaj kitni bikri hui?',
   'galti ho gayi, pichhla wala hatao',
+  'Sharma ji ke 500 likho aur Gupta ji ne 200 de diye',
 ];
 
 const LANG_KEY = 'ds.voiceLang';
-const SPEAK_KEY = 'ds.voiceSpeak';
 
 /** The voice assistant sheet: listen -> parse -> confirm -> save (or answer a question). */
 @Component({
   selector: 'app-voice-panel',
-  imports: [FormsModule, MatDialogModule, MatButton, MatIconButton, MatProgressSpinner, TranslatePipe, VoiceAnswer, VoiceConfirm],
+  imports: [FormsModule, MatDialogModule, MatButton, MatIconButton, MatProgressSpinner, TranslatePipe, VoiceAnswer, VoiceConfirm, VoiceMultiConfirm],
   templateUrl: './voice-panel.html',
   styleUrl: './voice-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -56,14 +58,17 @@ export class VoicePanel implements OnInit, OnDestroy {
   private readonly alerts = inject(StockAlertsService);
   private readonly t = inject(TranslateService);
   private readonly router = inject(Router);
+  private readonly customers = inject(CustomersApi);
   protected readonly speech = inject(SpeechService);
+  private readonly replies = inject(VoiceReplies);
 
   protected readonly stage = signal<Stage>('idle');
   protected readonly text = signal('');
   protected readonly result = signal<VoiceParseResult | null>(null);
   protected readonly message = signal('');
   protected readonly speechLang = signal<SpeechLang>((storage.get(LANG_KEY) as SpeechLang) || 'hi-IN');
-  protected readonly speakBack = signal(storage.get(SPEAK_KEY) !== '0');
+  /** Spoken replies on/off (also in Settings). */
+  protected readonly speakBack = this.replies.enabled;
   protected readonly examples = EXAMPLES;
   protected readonly undoer = inject(VoiceUndo);
   /** The just-saved voice entry, while it can still be undone from this screen. */
@@ -92,8 +97,7 @@ export class VoicePanel implements OnInit, OnDestroy {
   }
 
   protected toggleSpeak(): void {
-    this.speakBack.update((v) => !v);
-    storage.set(SPEAK_KEY, this.speakBack() ? '1' : '0');
+    this.replies.setEnabled(!this.speakBack());
   }
 
   protected listen(): void {
@@ -136,6 +140,10 @@ export class VoicePanel implements OnInit, OnDestroy {
         this.result.set(r);
         if (r.intent === 'undo_last') {
           this.undoFromVoice(r);
+        } else if (r.actions && r.actions.length > 1) {
+          // Several entries in one sentence: saved together (auto-save only if every one qualifies).
+          if (r.autoSave) this.onConfirmAll(r.actions.map(toConfirmedCommand));
+          else this.stage.set('confirm');
         } else if (r.needsConfirmation && r.autoSave) {
           // Clear command and the shop turned "always ask" off: save now, offer Undo after.
           this.onConfirm(toConfirmedCommand(r));
@@ -144,7 +152,8 @@ export class VoicePanel implements OnInit, OnDestroy {
         } else {
           this.message.set(r.answer ?? '');
           this.stage.set('answer');
-          this.say(r.answer ?? '', r.replyLang);
+          if (r.intent === 'unknown') this.replies.notUnderstood(r.replyLang);
+          else this.say(r.answer ?? '', r.replyLang);
         }
       },
       error: (e) => {
@@ -170,7 +179,7 @@ export class VoicePanel implements OnInit, OnDestroy {
         // The in-panel Undo button disappears when the undo window ends.
         clearTimeout(this.undoTimer);
         this.undoTimer = setTimeout(() => this.savedLogId.set(null), this.undoer.windowSeconds() * 1000);
-        this.say(msg, r.replyLang);
+        this.speakSaved(cmd, msg, r.replyLang);
         this.alerts.refresh();
         this.events.changed('any');
       },
@@ -179,7 +188,53 @@ export class VoicePanel implements OnInit, OnDestroy {
         this.api.updateLog(r.logId, { status: 'failed', error: msg }).subscribe({ error: () => undefined });
         this.stage.set('confirm');
         this.toast.error(msg);
+        this.replies.failed(msg, r.replyLang);
       },
+    });
+  }
+
+  /** "Sab save karo": every entry of a multi-action command, in one transaction (one Undo). */
+  protected onConfirmAll(cmds: ConfirmedCommand[]): void {
+    const r = this.result();
+    if (!r || !cmds.length) return;
+    this.stage.set('saving');
+    this.executor.executeBatch(cmds, r.replyLang).subscribe({
+      next: ({ messages, outcomes }) => {
+        const msg = messages.filter(Boolean).join(' · ');
+        this.api.updateLog(r.logId, { status: 'confirmed', resultMessage: msg }).subscribe({ error: () => undefined });
+        this.executor.learn(cmds.flatMap((c) => c.learn ?? []));
+        this.message.set(msg);
+        this.savedLogId.set(r.logId);
+        this.undone.set(false);
+        this.stage.set('done');
+        this.undoer.offer(r.logId, msg);
+        clearTimeout(this.undoTimer);
+        this.undoTimer = setTimeout(() => this.savedLogId.set(null), this.undoer.windowSeconds() * 1000);
+        this.replies.batchSaved(outcomes, r.replyLang);
+        this.alerts.refresh();
+        this.events.changed('any');
+      },
+      error: (e) => {
+        const msg = apiErrorMessage(e);
+        this.api.updateLog(r.logId, { status: 'failed', error: msg }).subscribe({ error: () => undefined });
+        this.stage.set('confirm');
+        this.toast.error(msg);
+        this.replies.failed(msg, r.replyLang);
+      },
+    });
+  }
+
+  /** "Theek hai, Sharma ji ka total udhaar ab 2,300 rupaye ho gaya": looks up the new total for udhaar entries. */
+  private speakSaved(cmd: ConfirmedCommand, msg: string, lang: 'hi' | 'en'): void {
+    if (!this.replies.enabled()) return;
+    const customerEntry = cmd.intent === 'add_credit' || cmd.intent === 'receive_payment' || (cmd.intent === 'add_sale' && cmd.paymentMode === 'udhaar');
+    if (!customerEntry || !cmd.customerId) {
+      this.replies.saved(cmd.intent, msg, lang);
+      return;
+    }
+    this.customers.get(cmd.customerId).subscribe({
+      next: (c) => this.replies.saved(cmd.intent, msg, lang, { name: c.name, balance: c.currentBalance }),
+      error: () => this.replies.saved(cmd.intent, msg, lang),
     });
   }
 
@@ -192,7 +247,7 @@ export class VoicePanel implements OnInit, OnDestroy {
         this.savedLogId.set(null);
         this.undone.set(true);
         this.message.set(msg);
-        this.say(msg, this.result()?.replyLang);
+        this.replies.undone(this.result()?.replyLang ?? this.lang.current());
       },
       error: () => undefined,
     });
@@ -214,7 +269,7 @@ export class VoicePanel implements OnInit, OnDestroy {
         this.undone.set(true);
         this.savedLogId.set(null);
         this.stage.set('done');
-        this.say(msg, r.replyLang);
+        this.replies.undone(r.replyLang);
       },
       error: (e) => {
         this.message.set(apiErrorMessage(e));
@@ -252,7 +307,7 @@ export class VoicePanel implements OnInit, OnDestroy {
 
   /** Speaks in the language the command was spoken in (falls back to the app language). */
   private say(text: string, lang: 'hi' | 'en' = this.lang.current()): void {
-    if (this.speakBack()) this.speech.speak(text, lang === 'hi' ? 'hi-IN' : 'en-IN');
+    this.replies.say(text, lang);
   }
 
   protected errorKey(): string | null {

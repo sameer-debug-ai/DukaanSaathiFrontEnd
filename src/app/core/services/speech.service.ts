@@ -131,13 +131,21 @@ export class SpeechService {
     this.interim.set('');
   }
 
-  speak(text: string, lang: SpeechLang): void {
+  /**
+   * `fallback`: what to say instead when this device has no voice for `lang` (e.g. no Hindi
+   * voice installed), typically the English version in en-IN.
+   */
+  speak(text: string, lang: SpeechLang, fallback?: { text: string; lang: SpeechLang }): void {
     if (!this.canSpeak || !text) return;
     window.speechSynthesis.cancel();
+    const voices = window.speechSynthesis.getVoices();
+    const voiceFor = (l: SpeechLang) => voices.find((v) => v.lang.replace('_', '-') === l) ?? voices.find((v) => v.lang.startsWith(l.slice(0, 2)));
+    // Voices load lazily; with an empty list the browser default is still worth trying.
+    if (fallback && voices.length && !voiceFor(lang) && voiceFor(fallback.lang)) return this.speak(fallback.text, fallback.lang);
     const u = new SpeechSynthesisUtterance(text.replace(/₹/g, lang === 'hi-IN' ? 'रुपये ' : 'rupees '));
     u.lang = lang;
     u.rate = 1;
-    const voice = window.speechSynthesis.getVoices().find((v) => v.lang === lang) ?? window.speechSynthesis.getVoices().find((v) => v.lang.startsWith(lang.slice(0, 2)));
+    const voice = voiceFor(lang);
     if (voice) u.voice = voice;
     window.speechSynthesis.speak(u);
   }

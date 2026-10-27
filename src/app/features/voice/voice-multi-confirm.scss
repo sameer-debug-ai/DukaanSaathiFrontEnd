@@ -1,0 +1,95 @@
+.multi {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.title {
+  margin: 0;
+}
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 6px 10px 12px;
+  border: 1px solid var(--ds-line);
+  border-radius: 14px;
+  &.has-problem {
+    border-color: var(--ds-warn);
+  }
+}
+.num {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-top: 2px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: var(--ds-brand-soft);
+  color: var(--ds-brand);
+}
+.text {
+  flex: 1;
+  min-width: 0;
+}
+.intent {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ds-muted);
+  font-weight: 600;
+}
+.summary {
+  margin: 2px 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.problem {
+  margin: 4px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ds-warn);
+  font-size: 0.88rem;
+  .material-symbols-outlined {
+    font-size: 18px;
+  }
+}
+.row-actions {
+  flex: none;
+  display: flex;
+}
+.fix-hint {
+  margin: 0;
+  color: var(--ds-muted);
+  font-size: 0.9rem;
+}
+.edit-hint {
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ds-muted);
+  font-size: 0.9rem;
+}
+.actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 8px;
+}
+.yes {
+  --mdc-filled-button-container-color: var(--ds-ok);
+  --mat-button-filled-container-color: var(--ds-ok);
+}

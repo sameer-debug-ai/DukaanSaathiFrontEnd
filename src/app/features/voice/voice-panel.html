@@ -24,7 +24,11 @@
       }
       @case ('confirm') {
         <p class="heard small">“{{ result()!.text }}”</p>
-        <app-voice-confirm [result]="result()!" (confirmed)="onConfirm($event)" (cancelled)="onCancel()" />
+        @if (result()!.actions) {
+          <app-voice-multi-confirm [result]="result()!" (confirmed)="onConfirmAll($event)" (cancelled)="onCancel()" />
+        } @else {
+          <app-voice-confirm [result]="result()!" (confirmed)="onConfirm($event)" (cancelled)="onCancel()" />
+        }
         @if (result()!.engine === 'rules') {
           <p class="engine">{{ 'voice.offlineParser' | translate }}</p>
         }

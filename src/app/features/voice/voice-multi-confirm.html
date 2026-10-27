@@ -1,0 +1,47 @@
+@if (editingRow(); as row) {
+  <p class="edit-hint">
+    <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
+    {{ 'voice.multi.editing' | translate: { n: rows().indexOf(row) + 1, total: rows().length } }}
+  </p>
+  <app-voice-confirm [result]="row.result" [busy]="busy()" (confirmed)="applyEdit($event)" (cancelled)="editingKey.set(null)" />
+} @else {
+  <div class="multi">
+    <p class="title">
+      <span class="ds-badge info">{{ 'voice.multi.count' | translate: { n: rows().length } }}</span>
+    </p>
+
+    <ol class="rows">
+      @for (row of rows(); track row.key; let i = $index) {
+        <li class="row" [class.has-problem]="problemsByKey().get(row.key)?.length">
+          <span class="num" aria-hidden="true">{{ i + 1 }}</span>
+          <div class="text">
+            <span class="intent">{{ ('voice.intent.' + row.cmd.intent) | translate }}</span>
+            <p class="summary">{{ summary(row) }}</p>
+            @for (p of problemsByKey().get(row.key); track p) {
+              <p class="problem"><span class="material-symbols-outlined" aria-hidden="true">error</span>{{ p | translate }}</p>
+            }
+          </div>
+          <div class="row-actions">
+            <button mat-icon-button type="button" (click)="edit(row)" [disabled]="busy()" [attr.aria-label]="('common.edit' | translate) + ' ' + (i + 1)">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button mat-icon-button type="button" (click)="remove(row)" [disabled]="busy()" [attr.aria-label]="('voice.multi.remove' | translate) + ' ' + (i + 1)">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </li>
+      }
+    </ol>
+
+    @if (!canSave()) {
+      <p class="fix-hint">{{ 'voice.multi.fixFirst' | translate }}</p>
+    }
+
+    <div class="actions">
+      <button mat-flat-button class="ds-big-btn yes" (click)="saveAll()" [disabled]="busy() || !canSave()">
+        <span class="material-symbols-outlined">done_all</span>{{ 'voice.multi.saveAll' | translate }}
+      </button>
+      <button mat-button class="ds-big-btn" (click)="cancelled.emit()" [disabled]="busy()">{{ 'common.cancel' | translate }}</button>
+    </div>
+  </div>
+}

@@ -239,6 +239,7 @@ export type Intent =
   | 'query_stock'
   | 'query_summary'
   | 'undo_last'
+  | 'reset_context'
   | 'unknown';
 
 export interface Candidate {
@@ -304,6 +305,20 @@ export interface VoiceParseResult {
   autoSaveConfidence?: number;
   /** Clear enough (and the shop allows it): save without the confirmation card. */
   autoSave?: boolean;
+  /** Several entries in one sentence: each one resolved (top-level fields repeat the first). Saved together. */
+  actions?: VoiceParseResult[];
+}
+
+/** What one action of a multi-action voice command saved (POST /ai/execute-batch). */
+export interface VoiceBatchOutcome {
+  intent: Intent;
+  name: string;
+  amount: number;
+  /** Customer's udhaar / supplier's due after this entry (paise). */
+  balance?: number;
+  billNumber?: number;
+  stock?: number;
+  unit?: string;
 }
 
 export interface VoiceStockRow {

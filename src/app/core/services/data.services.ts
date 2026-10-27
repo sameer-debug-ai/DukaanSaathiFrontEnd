@@ -22,6 +22,7 @@ import type {
   SupplierHistoryRow,
   SupplierPayment,
   Unit,
+  VoiceBatchOutcome,
   VoiceLog,
   VoiceParseResult,
 } from '../models/domain.models';
@@ -227,6 +228,24 @@ export class ReportsApi {
   }
 }
 
+/** One reviewed action of a multi-action voice command, as sent to /ai/execute-batch. */
+export interface VoiceBatchAction {
+  intent: VoiceParseResult['intent'];
+  customerId?: string;
+  newCustomerName?: string;
+  supplierId?: string;
+  productId?: string;
+  productName?: string;
+  amount: number | null;
+  paidAmount: number | null;
+  quantity: number | null;
+  unit: string | null;
+  sellingPrice: number | null;
+  paymentMode: 'cash' | 'upi' | 'udhaar' | 'bank' | null;
+  date?: string;
+  items: { productId?: string; name: string; qty: number; unit: string | null; rate: number | null }[];
+}
+
 export interface AliasLearning {
   kind: 'customer' | 'product' | 'supplier';
   id: string;
@@ -259,6 +278,10 @@ export class VoiceApi {
   }
   undoLast() {
     return this.api.post<VoiceLog>('/ai/undo-last', {});
+  }
+  /** Save every action of a multi-action command together, in one transaction (Undo reverses all). */
+  executeBatch(body: { logId: string; text: string; note: string; actions: VoiceBatchAction[] }) {
+    return this.api.post<VoiceBatchOutcome[]>('/ai/execute-batch', body);
   }
   /** Remember spoken names for records the user picked, so they match directly next time. */
   learnAliases(items: AliasLearning[]) {
