@@ -1,11 +1,16 @@
 <div class="shell">
   <aside class="brand" aria-hidden="false">
+    <div class="grid-bg" aria-hidden="true"></div>
     <div class="glow g1"></div>
     <div class="glow g2"></div>
 
-    <app-logo [size]="48" [light]="true" />
+    <app-logo [size]="44" [light]="true" />
 
     <div class="pitch">
+      <span class="eyebrow">
+        <span class="material-symbols-outlined icon-filled" aria-hidden="true">graphic_eq</span>
+        {{ 'auth.brand.eyebrow' | translate }}
+      </span>
       <h1>{{ 'auth.brand.headline' | translate }}</h1>
       <p>{{ 'auth.brand.sub' | translate }}</p>
 
@@ -20,10 +25,12 @@
 
       <!-- A small "live" preview of the voice flow. -->
       <div class="preview" aria-hidden="true">
-        <div class="bubble">
-          <span class="material-symbols-outlined icon-filled mic">mic</span>
-          “Sharma ji ke udhaar me 500 add kar do”
+        <div class="pv-head">
+          <span class="pv-mic"><span class="material-symbols-outlined icon-filled">mic</span></span>
+          <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
+          <span class="pv-label">{{ 'auth.brand.previewTitle' | translate }}</span>
         </div>
+        <p class="quote">“Sharma ji ke udhaar me 500 add kar do”</p>
         <div class="result">
           <span class="material-symbols-outlined icon-filled ok">check_circle</span>
           <div>
@@ -51,7 +58,7 @@
     </div>
 
     <p class="secure">
-      <span class="material-symbols-outlined" aria-hidden="true">lock</span>
+      <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
       {{ 'auth.brand.secure' | translate }}
     </p>
   </main>

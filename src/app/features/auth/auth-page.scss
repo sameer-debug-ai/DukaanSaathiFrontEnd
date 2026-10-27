@@ -7,26 +7,64 @@
 .card {
   // Slightly tighter fields so the whole form fits on short laptop screens.
   @include mat.theme((density: -2));
-  padding: clamp(22px, 4vh, 32px) 28px clamp(20px, 3.5vh, 28px);
+  --mat-form-field-outlined-container-shape: 12px;
+  --mat-button-filled-container-color: var(--ds-brand-solid);
+  --mat-button-filled-label-text-color: #fff;
+  --ds-brand-solid: #1e5fa8;
+  position: relative;
+  padding: clamp(24px, 4vh, 34px) 30px clamp(20px, 3.5vh, 28px);
   border: 1px solid var(--ds-line);
-  border-radius: 20px;
+  border-radius: 22px;
   background: var(--ds-card);
   box-shadow:
     0 1px 2px rgba(16, 24, 40, 0.04),
-    0 16px 40px -12px rgba(16, 24, 40, 0.14);
+    0 24px 48px -16px rgba(16, 24, 40, 0.16);
+  overflow: hidden;
+  // Thin brand accent along the top edge.
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1e5fa8, #2b7bd3 55%, #f59e0b);
+  }
+}
+:host-context(html.dark) .card {
+  --ds-brand-solid: #2b6cc4;
+  background: #1a1e24;
+  border-color: #2a3038;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 24px 60px -20px rgba(0, 0, 0, 0.7);
 }
 
 .head {
-  margin-bottom: clamp(16px, 3vh, 24px);
+  margin-bottom: clamp(18px, 3vh, 26px);
   h2 {
     margin: 0 0 6px;
-    font-size: clamp(1.35rem, 2vw, 1.6rem);
+    font-size: clamp(1.4rem, 2vw, 1.65rem);
     font-weight: 700;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
   p {
     margin: 0;
     color: var(--ds-muted);
+    line-height: 1.5;
+  }
+}
+.head-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  background: var(--ds-brand-soft);
+  color: var(--ds-brand);
+  .material-symbols-outlined {
+    font-size: 26px;
   }
 }
 
@@ -43,17 +81,49 @@ mat-form-field {
   color: var(--ds-muted);
   font-size: 20px;
 }
+// Browser autofill paints its own (often dark) box inside the field; keep the card colour.
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ds-text);
+  caret-color: var(--ds-text);
+  -webkit-box-shadow: 0 0 0 1000px var(--ds-card) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+:host-context(html.dark) input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #1a1e24 inset;
+}
 
 .submit {
   width: 100%;
   height: 50px;
-  margin-top: 4px;
+  margin-top: 6px;
   border-radius: 12px;
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 24px -10px rgba(30, 95, 168, 0.7);
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    filter 0.15s;
   .material-symbols-outlined {
     margin-left: 6px;
     font-size: 20px;
+    transition: transform 0.15s;
+  }
+  &:not([disabled]):hover {
+    filter: brightness(1.08);
+    box-shadow: 0 14px 28px -10px rgba(30, 95, 168, 0.8);
+    .material-symbols-outlined {
+      transform: translateX(3px);
+    }
+  }
+  &:not([disabled]):active {
+    transform: translateY(1px);
+  }
+  mat-progress-spinner {
+    --mat-progress-spinner-active-indicator-color: #fff;
   }
 }
 
@@ -61,9 +131,11 @@ mat-form-field {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: clamp(14px, 2.5vh, 20px) 0 clamp(10px, 2vh, 14px);
+  margin: clamp(16px, 2.5vh, 22px) 0 clamp(12px, 2vh, 16px);
   color: var(--ds-muted);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   &::before,
   &::after {
     content: '';
@@ -79,22 +151,36 @@ mat-form-field {
   gap: 10px;
   width: 100%;
   padding: 12px 14px;
-  border: 1px dashed var(--ds-warn);
+  border: 1px solid var(--ds-line);
   border-radius: 12px;
-  background: var(--ds-warn-soft);
-  color: var(--ds-warn);
+  background: var(--ds-surface);
+  color: var(--ds-text);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   .material-symbols-outlined {
-    font-size: 20px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: var(--ds-warn-soft);
+    color: var(--ds-warn);
+    font-size: 18px;
+  }
+  &:hover {
+    border-color: var(--ds-warn);
   }
 }
 
 .switch {
-  margin: clamp(14px, 2.5vh, 22px) 0 0;
+  margin: clamp(16px, 2.5vh, 22px) 0 0;
   text-align: center;
   color: var(--ds-muted);
   a {
@@ -114,6 +200,7 @@ mat-form-field {
   margin: 0 0 16px;
   padding: 10px 12px;
   border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--ds-danger) 30%, transparent);
   background: var(--ds-danger-soft);
   color: var(--ds-danger);
   font-size: 0.92rem;
@@ -121,12 +208,20 @@ mat-form-field {
     font-size: 20px;
   }
 }
+form .error {
+  margin: 0;
+}
 
 @media (max-width: 480px) {
   .card {
-    padding: 24px 18px 20px;
+    padding: 26px 18px 20px;
+    border-radius: 18px;
   }
   .head h2 {
     font-size: 1.4rem;
+  }
+  .head-icon {
+    width: 42px;
+    height: 42px;
   }
 }
