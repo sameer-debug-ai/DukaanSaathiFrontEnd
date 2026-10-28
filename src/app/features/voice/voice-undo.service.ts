@@ -7,6 +7,9 @@ import { AppEvents, StockAlertsService } from '../../core/services/app-events.se
 import { VoiceApi } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
 
+/** How long the "Saved ✓ [Undo]" toast stays on screen. */
+const TOAST_SECONDS = 5;
+
 /**
  * Undo for entries saved by voice. Lives at the root so the "Undo" in the snackbar still
  * works after the voice panel is closed.
@@ -30,7 +33,8 @@ export class VoiceUndo {
 
   /** "Saved ✓ [Undo]" after a voice save; tapping Undo reverses it. */
   offer(logId: string, message: string): void {
-    this.toast.withAction(`✓ ${message}`, 'voice.undo', this.windowSeconds()).subscribe(() => this.undo(logId).subscribe({ error: () => undefined }));
+    // The toast only lingers briefly; Undo stays available in the panel and Voice History for the full window.
+    this.toast.withAction(`✓ ${message}`, 'voice.undo', Math.min(TOAST_SECONDS, this.windowSeconds())).subscribe(() => this.undo(logId).subscribe({ error: () => undefined }));
   }
 
   /** Reverses the entry; resolves to a message for the panel. Errors are toasted. */
