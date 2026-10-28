@@ -55,7 +55,8 @@
     "collapse": "Collapse menu",
     "expand": "Expand menu",
     "notifications": "Stock alerts",
-    "account": "Account"
+    "account": "Account",
+    "reorder": "Order list"
   },
   "auth": {
     "loginSub": "Welcome back! Login to manage your shop.",
@@ -576,7 +577,11 @@
     "upiHint": "Customers get a \"Pay via UPI\" link and QR code in reminders, statements and their khata page.",
     "upiId": "Shop UPI ID",
     "upiIdInvalid": "Enter a valid UPI ID, e.g. shopname@okaxis",
-    "upiPayeeName": "Name shown in UPI apps (optional)"
+    "upiPayeeName": "Name shown in UPI apps (optional)",
+    "reorderDays": "Order list: stock for",
+    "daysSuffix": "days",
+    "reorderDaysHint": "The order list suggests enough stock to last this many days",
+    "reorderDaysRange": "Enter 3 to 90 days"
   },
   "more": {
     "title": "More"
@@ -872,5 +877,70 @@
     "billPhoto": "Bill photo",
     "tapToZoom": "Tap to open full size",
     "noPhoto": "No bill photo (entered by hand)."
+  },
+  "smart": {
+    "runOutIn": "~{{days}} days left",
+    "runOutToday": "May run out today",
+    "runOutTitle": "Running out soon",
+    "makeOrder": "Make order list",
+    "within3": "Within 3 days",
+    "within7": "Within 7 days",
+    "daysShort": "~{{days}} days",
+    "today": "Today",
+    "perDay": "Sells ~{{qty}} {{unit}} a day"
+  },
+  "scan": {
+    "title": "Scan barcode",
+    "billing": "Scan to add item",
+    "stockCheck": "Stock check",
+    "starting": "Starting camera…",
+    "hint": "Hold the barcode inside the box",
+    "typeCode": "Or type the barcode",
+    "error": {
+      "denied": "Camera permission is blocked. Allow the camera for this site in the browser settings.",
+      "noCamera": "No camera found on this device. Type the barcode below.",
+      "insecure": "The camera works only on https (or localhost). Type the barcode below.",
+      "failed": "Could not start the camera. Type the barcode below."
+    },
+    "openProduct": "Open product",
+    "again": "Scan next",
+    "notFound": "No product has barcode {{code}}. Add it as a new product?",
+    "notInShop": "No product with barcode {{code}}",
+    "added": "{{name}} added"
+  },
+  "reorder": {
+    "title": "Order list",
+    "subtitle": "What to buy for the next {{days}} days, by supplier",
+    "daysLabel": "Order for",
+    "days": "{{days}} days",
+    "emptyTitle": "Nothing to order",
+    "emptyHint": "Stock will last {{days}} days at the current sales.",
+    "noSupplier": "No supplier set",
+    "items": "{{n}} items",
+    "lowStock": "below minimum",
+    "qtyFor": "Quantity of {{name}}",
+    "estimate": "Estimated cost",
+    "sendWhatsapp": "Order on WhatsApp",
+    "received": "Goods received → Purchase",
+    "noPhone": "Add the supplier's phone number to send the order directly; otherwise choose the chat in WhatsApp."
+  },
+  "expiry": {
+    "title": "Expiry alert",
+    "expired": "Expired",
+    "expiredOn": "expired {{date}}",
+    "soon": "Expiring in {{days}} days",
+    "inDays": "in {{days}} days ({{date}})",
+    "today": "expires today",
+    "writeOff": "Remove",
+    "confirmWriteOff": "Remove {{qty}} {{unit}} of {{name}} from stock as damaged/expired?",
+    "writtenOff": "{{name}} removed from stock",
+    "batches": "Batches (expiry)",
+    "exp": "Exp {{date}}",
+    "noDate": "No expiry date",
+    "track": "Track expiry",
+    "trackHint": "Keep stock in batches with expiry dates; sales use the earliest expiry first.",
+    "fefoHint": "Sold earliest expiry first",
+    "noBatches": "No stock in batches. Add expiry dates when you record a purchase.",
+    "date": "Expiry date"
   }
 }

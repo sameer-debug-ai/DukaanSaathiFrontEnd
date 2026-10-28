@@ -9,6 +9,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { Product } from '../../core/models/domain.models';
 import { AppEvents, StockAlertsService } from '../../core/services/app-events.service';
+import { BarcodeScanner } from '../../core/services/barcode-scanner.service';
 import { ProductsApi } from '../../core/services/data.services';
 import { ShareService } from '../../core/services/share.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -18,11 +19,13 @@ import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { SearchBox } from '../../shared/components/search-box/search-box';
 import { Skeleton } from '../../shared/components/skeleton/skeleton';
+import { RunOutLabel } from '../../shared/components/run-out/run-out';
 import { StockBadge } from '../../shared/components/stock-badge/stock-badge';
 import { InrPipe } from '../../shared/pipes/inr.pipe';
 import { AdjustStockDialog } from './adjust-stock-dialog';
 import { ImportDialog } from './import-dialog';
 import { ProductFormDialog } from './product-form-dialog';
+import { StockCheckDialog, type StockCheckResult } from './stock-check-dialog';
 
 type StockFilter = 'all' | 'in' | 'low' | 'out';
 
@@ -30,7 +33,7 @@ type StockFilter = 'all' | 'in' | 'low' | 'out';
   selector: 'app-products-list',
   imports: [
     FormsModule, RouterLink, MatButton, MatIconButton, MatMenuModule, MatSelectModule, MatTooltip, TranslatePipe,
-    PageHeader, SearchBox, Skeleton, EmptyState, StockBadge, InrPipe,
+    PageHeader, SearchBox, Skeleton, EmptyState, StockBadge, InrPipe, RunOutLabel,
   ],
   templateUrl: './products-list.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,6 +53,7 @@ export class ProductsList {
   private readonly alerts = inject(StockAlertsService);
   private readonly router = inject(Router);
   private readonly t = inject(TranslateService);
+  private readonly scanner = inject(BarcodeScanner);
 
   protected readonly items = signal<Product[]>([]);
   protected readonly total = signal(0);
@@ -154,9 +158,9 @@ export class ProductsList {
     this.reload();
   }
 
-  protected openForm(product?: Product): void {
+  protected openForm(product?: Product, barcode?: string): void {
     this.dialog
-      .open(ProductFormDialog, { data: { product, categories: this.categories() }, width: '640px', maxWidth: '96vw', autoFocus: false })
+      .open(ProductFormDialog, { data: { product, categories: this.categories(), barcode }, width: '640px', maxWidth: '96vw', autoFocus: false })
       .afterClosed()
       .subscribe((p) => {
         if (this.add()) void this.router.navigate([], { queryParams: { add: null }, queryParamsHandling: 'merge', replaceUrl: true });
@@ -194,6 +198,27 @@ export class ProductsList {
           error: (e) => this.toast.apiError(e),
         });
       });
+  }
+
+  /** Quick "stock check": scan a barcode, see stock / days left / expiry; scan the next one. */
+  protected stockCheck(): void {
+    this.scanner.scan({ titleKey: 'scan.stockCheck' }).subscribe((code) => {
+      if (!code) return;
+      this.api.byBarcode(code).subscribe({
+        next: (p) =>
+          this.dialog
+            .open<StockCheckDialog, Product, StockCheckResult>(StockCheckDialog, { data: p, width: '420px', maxWidth: '96vw', autoFocus: false })
+            .afterClosed()
+            .subscribe((r) => (r === 'again' ? this.stockCheck() : r === 'open' ? this.open(p) : undefined)),
+        error: (e) => {
+          if (e?.status !== 404) return this.toast.apiError(e);
+          // Unknown code: offer to add it as a new product with the barcode filled in.
+          this.confirm
+            .ask({ message: this.t.instant('scan.notFound', { code }), confirmText: this.t.instant('products.add') })
+            .subscribe((ok) => ok && this.openForm(undefined, code));
+        },
+      });
+    });
   }
 
   protected altNames(p: Product): string {

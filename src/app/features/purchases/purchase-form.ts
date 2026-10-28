@@ -20,6 +20,7 @@ import { PageHeader } from '../../shared/components/page-header/page-header';
 import { InrPipe } from '../../shared/pipes/inr.pipe';
 import { SupplierFormDialog } from '../suppliers/supplier-dialogs';
 import { BillScanButton } from './bill-scan-button';
+import { OrderDrafts } from './order-drafts';
 import { scanAliases, scanToRows, totalsMismatch } from './purchase-scan';
 
 interface Row {
@@ -36,6 +37,8 @@ interface Row {
   scanName?: string;
   scanStatus?: ScanItemStatus;
   candidates?: Candidate[];
+  /** Expiry-tracked products: this lot's expiry (YYYY-MM-DD). */
+  expiry?: string;
 }
 
 let rowKey = 0;
@@ -57,6 +60,8 @@ export class PurchaseForm implements OnInit {
   readonly productId = input<string>();
   /** ?scan=1: open with the bill the voice panel just scanned. */
   readonly scan = input<string>();
+  /** ?order=1: open with the order from the reorder list ("Maal aa gaya"). */
+  readonly order = input<string>();
 
   private readonly suppliersApi = inject(SuppliersApi);
   private readonly productsApi = inject(ProductsApi);
@@ -68,6 +73,7 @@ export class PurchaseForm implements OnInit {
   private readonly billScanApi = inject(BillScanApi);
   private readonly drafts = inject(BillScanDrafts);
   private readonly voiceApi = inject(VoiceApi);
+  private readonly orderDrafts = inject(OrderDrafts);
 
   protected readonly units = UNITS;
   protected readonly suppliers = signal<Supplier[]>([]);
@@ -118,6 +124,15 @@ export class PurchaseForm implements OnInit {
         const pid = this.productId();
         const p = pid ? r.items.find((x) => x.id === pid) : undefined;
         if (p) this.rows.set([{ ...emptyRow(), query: p.name, product: p, rate: toRupees(p.purchasePrice), qty: p.lowStockThreshold * 3 || 1 }]);
+        const order = this.order() ? this.orderDrafts.take() : null;
+        if (order) {
+          const rows = order.items
+            .map((i) => ({ i, p: r.items.find((x) => x.id === i.productId) }))
+            .filter((x): x is { i: (typeof order.items)[number]; p: Product } => !!x.p)
+            .map(({ i, p: prod }) => ({ ...emptyRow(), query: prod.name, product: prod, qty: i.qty, rate: toRupees(i.rate) }));
+          if (rows.length) this.rows.set(rows);
+          if (order.supplierId) this.supplier.set(order.supplierId);
+        }
         this.productsLoaded = true;
         if (this.pendingScan) this.applyScan(this.pendingScan);
       },
@@ -233,7 +248,7 @@ export class PurchaseForm implements OnInit {
       supplierId: this.supplier(),
       items: rows.map((r) =>
         r.product
-          ? { productId: r.product.id, qty: Number(r.qty), rate: toPaise(r.rate) }
+          ? { productId: r.product.id, qty: Number(r.qty), rate: toPaise(r.rate), ...(r.product.trackExpiry && r.expiry ? { expiryDate: r.expiry } : {}) }
           : { newProduct: { name: r.query.trim(), unit: r.newUnit, sellingPrice: toPaise(r.newSellingPrice) }, qty: Number(r.qty), rate: toPaise(r.rate) },
       ),
       paidAmount: this.paidPaise(),

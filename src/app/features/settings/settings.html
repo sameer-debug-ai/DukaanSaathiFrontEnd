@@ -57,6 +57,13 @@
       <input matInput type="number" inputmode="numeric" formControlName="lowStockDefault" min="0" />
       <mat-hint>{{ 'settings.lowStockDefaultHint' | translate }}</mat-hint>
     </mat-form-field>
+    <mat-form-field appearance="outline" class="max-w-xs block mt-4">
+      <mat-label>{{ 'settings.reorderDays' | translate }}</mat-label>
+      <input matInput type="number" inputmode="numeric" formControlName="reorderDays" min="3" max="90" />
+      <span matTextSuffix>{{ 'settings.daysSuffix' | translate }}</span>
+      <mat-hint>{{ 'settings.reorderDaysHint' | translate }}</mat-hint>
+      <mat-error>{{ 'settings.reorderDaysRange' | translate }}</mat-error>
+    </mat-form-field>
     <div class="flex items-start justify-between gap-4 my-4">
       <div>
         <div>{{ 'settings.allowOversell' | translate }}</div>

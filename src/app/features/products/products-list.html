@@ -7,7 +7,12 @@
       <button mat-menu-item (click)="openImport()"><span class="material-symbols-outlined mr-3 align-middle">upload</span>{{ 'products.import' | translate }}</button>
       <button mat-menu-item (click)="exportCsv()"><span class="material-symbols-outlined mr-3 align-middle">download</span>{{ 'products.export' | translate }}</button>
       <a mat-menu-item routerLink="/products/alerts"><span class="material-symbols-outlined mr-3 align-middle">warning</span>{{ 'nav.lowStock' | translate }}</a>
+      <a mat-menu-item routerLink="/products/reorder"><span class="material-symbols-outlined mr-3 align-middle">playlist_add_check</span>{{ 'reorder.title' | translate }}</a>
     </mat-menu>
+    <button mat-stroked-button (click)="stockCheck()" [matTooltip]="'scan.stockCheck' | translate" [attr.aria-label]="'scan.stockCheck' | translate">
+      <span class="material-symbols-outlined">barcode_scanner</span>
+      <span class="hidden sm:inline">{{ 'scan.stockCheck' | translate }}</span>
+    </button>
     <button mat-flat-button (click)="openForm()">
       <span class="material-symbols-outlined">add</span>
       <span class="hidden sm:inline">{{ 'products.add' | translate }}</span>
@@ -67,7 +72,10 @@
               <td>{{ p.category }}</td>
               <td class="num">{{ p.sellingPrice | inr }}<span class="text-muted text-sm">/{{ p.unit }}</span></td>
               <td class="num">{{ p.purchasePrice | inr }}</td>
-              <td class="num font-semibold">{{ p.currentStock }} {{ p.unit }}</td>
+              <td class="num font-semibold">
+                {{ p.currentStock }} {{ p.unit }}
+                <div class="font-normal"><app-run-out [forecast]="p.forecast" [stock]="p.currentStock" /></div>
+              </td>
               <td><app-stock-badge [status]="p.stockStatus" /></td>
               <td class="num">
                 <button mat-icon-button (click)="adjust(p, $event)" [matTooltip]="'stock.adjust' | translate" [attr.aria-label]="'stock.adjust' | translate">
@@ -96,6 +104,7 @@
                 <app-stock-badge [status]="p.stockStatus" />
                 <span class="text-sm font-semibold">{{ p.currentStock }} {{ p.unit }}</span>
               </div>
+              <app-run-out [forecast]="p.forecast" [stock]="p.currentStock" />
             </div>
             <button mat-icon-button (click)="adjust(p, $event)" [attr.aria-label]="'stock.adjust' | translate">
               <span class="material-symbols-outlined">swap_vert</span>

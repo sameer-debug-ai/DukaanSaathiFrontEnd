@@ -29,6 +29,9 @@
             <span class="material-symbols-outlined scan" [title]="'billing.scanHint' | translate" aria-hidden="true">barcode_scanner</span>
           }
         </label>
+        <button type="button" class="scan-btn" (click)="scanToAdd()" [title]="'scan.billing' | translate" [attr.aria-label]="'scan.billing' | translate">
+          <span class="material-symbols-outlined">barcode_scanner</span>
+        </button>
         <button type="button" class="voice-btn" (click)="voice.open()" [title]="'billing.speak' | translate" [attr.aria-label]="'billing.speak' | translate">
           <span class="material-symbols-outlined icon-filled">mic</span>
         </button>

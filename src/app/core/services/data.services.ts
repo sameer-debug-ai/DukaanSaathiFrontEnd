@@ -21,6 +21,10 @@ import type {
   Sale,
   SalePaymentMode,
   StockAlerts,
+  ExpiryAlerts,
+  ProductBatch,
+  ReorderList,
+  RunOutList,
   StockMovement,
   Supplier,
   SupplierHistoryRow,
@@ -45,6 +49,7 @@ export interface ProductInput {
   barcode?: string;
   openingStock?: number;
   supplierId?: string;
+  trackExpiry?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -80,11 +85,35 @@ export class ProductsApi {
       { rows, updateExisting },
     );
   }
-  adjustStock(body: { productId: string; quantity: number; type: 'adjustment' | 'damage' | 'return' | 'purchase'; note?: string } & VoiceLink) {
+  adjustStock(
+    body: { productId: string; quantity: number; type: 'adjustment' | 'damage' | 'return' | 'purchase'; note?: string; batchId?: string; expiryDate?: string | null } & VoiceLink,
+  ) {
     return this.api.post<Product>('/stock/adjust', body);
   }
   history(productId: string, params: QueryParams) {
     return this.api.getPaged<StockMovement>(`/stock/history/${productId}`, params);
+  }
+  /** Camera scan lookup; 404 when no product has this barcode. */
+  byBarcode(code: string) {
+    return this.api.get<Product>(`/products/barcode/${encodeURIComponent(code)}`);
+  }
+  batches(productId: string) {
+    return this.api.get<ProductBatch[]>(`/products/${productId}/batches`);
+  }
+}
+
+/** Smart stock: run-out forecast, reorder list, expiry alerts. */
+@Injectable({ providedIn: 'root' })
+export class SmartStockApi {
+  private readonly api = inject(ApiService);
+  runOut(days = 7) {
+    return this.api.get<RunOutList>('/stock/runout', { days });
+  }
+  reorder(days?: number) {
+    return this.api.get<ReorderList>('/stock/reorder', days ? { days } : {});
+  }
+  expiry(days = 7) {
+    return this.api.get<ExpiryAlerts>('/stock/expiry', { days });
   }
 }
 
@@ -170,7 +199,7 @@ export interface SupplierInput {
 
 export interface PurchaseInput {
   supplierId: string;
-  items: { productId?: string; newProduct?: { name: string; unit: Unit; category?: string; sellingPrice?: number }; qty: number; rate: number }[];
+  items: { productId?: string; newProduct?: { name: string; unit: Unit; category?: string; sellingPrice?: number }; qty: number; rate: number; expiryDate?: string }[];
   paidAmount: number;
   paymentMode?: PaymentMode;
   invoiceNumber?: string;

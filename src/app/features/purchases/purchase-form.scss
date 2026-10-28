@@ -47,6 +47,11 @@
     }
   }
 }
+/* Expiry date (tracked products) on its own line under qty / rate. */
+.row-nums .expiry {
+  grid-column: 1 / -1;
+  order: 1;
+}
 .line-total {
   display: flex;
   flex-direction: column;

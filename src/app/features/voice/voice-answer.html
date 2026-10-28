@@ -65,6 +65,31 @@
         }
       </div>
     }
+    @if (s.soon?.length) {
+      <div class="lists">
+        <section>
+          <h3 class="group warn">{{ 'smart.runOutTitle' | translate }} <span class="count">{{ s.soon!.length }}</span></h3>
+          <ul>
+            @for (i of s.soon!; track i.id) {
+              <li>
+                <button type="button" (click)="open.emit(['/products', i.id])">
+                  <span class="name">
+                    {{ i.name }}
+                    <small>{{ 'stock.left' | translate: { qty: i.stock, unit: i.unit } }}</small>
+                  </span>
+                  <span class="qty warn">{{ (i.daysLeft ? 'smart.daysShort' : 'smart.today') | translate: { days: i.daysLeft } }}</span>
+                  <span class="material-symbols-outlined chev" aria-hidden="true">chevron_right</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      </div>
+      <button type="button" class="link" (click)="open.emit(['/products', 'reorder'])">
+        {{ 'smart.makeOrder' | translate }}
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+      </button>
+    }
     <button type="button" class="link" (click)="open.emit(['/products', 'alerts'])">
       {{ 'voice.answer.openAlerts' | translate }}
       <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>

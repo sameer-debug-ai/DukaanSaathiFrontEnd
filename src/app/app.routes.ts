@@ -38,6 +38,7 @@ export const routes: Routes = [
         children: [
           { path: '', loadComponent: () => import('./features/products/products-list').then((m) => m.ProductsList) },
           { path: 'alerts', loadComponent: () => import('./features/products/stock-alerts').then((m) => m.StockAlertsPage), title: 'Low stock · DukaanSathi' },
+          { path: 'reorder', loadComponent: () => import('./features/products/reorder-list').then((m) => m.ReorderListPage), title: 'Order list · DukaanSathi' },
           { path: ':id', loadComponent: () => import('./features/products/product-detail').then((m) => m.ProductDetail) },
         ],
       },

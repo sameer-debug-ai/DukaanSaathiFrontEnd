@@ -34,6 +34,8 @@ export interface ShopSettings {
   upiId?: string;
   /** Name shown in the customer's UPI app (defaults to the shop name). */
   upiPayeeName?: string;
+  /** Auto reorder list: order enough for this many days. */
+  reorderDays?: number;
 }
 
 export interface User {

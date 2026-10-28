@@ -62,6 +62,7 @@ export class Settings implements OnInit {
   protected readonly prefsForm = this.fb.group({
     lowStockDefault: [this.user.settings.lowStockDefault, [Validators.required, Validators.min(0)]],
     allowOversell: [this.user.settings.allowOversell],
+    reorderDays: [this.user.settings.reorderDays ?? 15, [Validators.required, Validators.min(3), Validators.max(90)]],
   });
 
   /** Shop UPI ID for "Pay via UPI" links / QR in reminders, statements and the khata page. */
@@ -109,7 +110,7 @@ export class Settings implements OnInit {
   protected savePrefs(): void {
     if (this.prefsForm.invalid) return this.prefsForm.markAllAsTouched();
     const v = this.prefsForm.getRawValue();
-    this.auth.updateProfile({ settings: { lowStockDefault: Number(v.lowStockDefault), allowOversell: v.allowOversell } }).subscribe({
+    this.auth.updateProfile({ settings: { lowStockDefault: Number(v.lowStockDefault), allowOversell: v.allowOversell, reorderDays: Math.round(Number(v.reorderDays)) } }).subscribe({
       next: () => this.toast.success('settings.saved'),
       error: (e) => this.toast.apiError(e),
     });

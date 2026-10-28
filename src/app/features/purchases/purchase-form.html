@@ -150,6 +150,12 @@
               <span matTextPrefix>₹&nbsp;</span>
               <input matInput type="number" inputmode="decimal" min="0" [ngModel]="row.rate" (ngModelChange)="patch(row, { rate: $event })" />
             </mat-form-field>
+            @if (row.product?.trackExpiry) {
+              <mat-form-field appearance="outline" class="no-sub expiry">
+                <mat-label>{{ 'expiry.date' | translate }}</mat-label>
+                <input matInput type="date" [min]="today" [ngModel]="row.expiry" (ngModelChange)="patch(row, { expiry: $event })" />
+              </mat-form-field>
+            }
             <div class="line-total">
               <span class="text-xs text-muted">{{ 'common.total' | translate }}</span>
               <strong>{{ lineTotal(row) | inr }}</strong>

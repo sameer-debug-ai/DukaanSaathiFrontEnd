@@ -8,6 +8,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth/auth.service';
 import type { Customer, Product, SalePaymentMode } from '../../core/models/domain.models';
 import { AppEvents, StockAlertsService } from '../../core/services/app-events.service';
+import { BarcodeScanner } from '../../core/services/barcode-scanner.service';
 import { CustomersApi, ProductsApi, SalesApi } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
 import { toPaise } from '../../core/utils/format';
@@ -60,6 +61,7 @@ export class Billing implements OnInit {
   private readonly alerts = inject(StockAlertsService);
   private readonly auth = inject(AuthService);
   private readonly t = inject(TranslateService);
+  private readonly scanner = inject(BarcodeScanner);
   protected readonly voice = inject(VoiceUi);
   protected readonly modes = MODES;
 
@@ -152,6 +154,17 @@ export class Billing implements OnInit {
       this.add(target);
       this.query.set('');
     }
+  }
+
+  /** Camera scan: adds the product with this barcode to the bill. */
+  protected scanToAdd(): void {
+    this.scanner.scan({ titleKey: 'scan.billing' }).subscribe((code) => {
+      if (!code) return;
+      const p = this.products().find((x) => x.barcode && x.barcode === code);
+      if (!p) return this.toast.error('scan.notInShop', { code });
+      this.add(p);
+      this.toast.success('scan.added', { name: p.name });
+    });
   }
 
   protected setQty(line: CartLine, qty: number): void {

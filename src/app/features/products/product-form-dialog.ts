@@ -6,9 +6,11 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth/auth.service';
 import { UNITS, type Product } from '../../core/models/domain.models';
+import { BarcodeScanner } from '../../core/services/barcode-scanner.service';
 import { ProductsApi, type ProductInput } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
 import { toPaise, toRupees } from '../../core/utils/format';
@@ -21,11 +23,13 @@ export interface ProductFormData {
   name?: string;
   sellingPrice?: number;
   unit?: Product['unit'];
+  /** Pre-filled barcode (from a stock-check scan of an unknown code). */
+  barcode?: string;
 }
 
 @Component({
   selector: 'app-product-form-dialog',
-  imports: [ReactiveFormsModule, MatDialogModule, MatButton, MatIconButton, MatFormFieldModule, MatInput, MatSelectModule, MatAutocompleteModule, TranslatePipe],
+  imports: [ReactiveFormsModule, MatDialogModule, MatButton, MatIconButton, MatFormFieldModule, MatInput, MatSelectModule, MatAutocompleteModule, MatSlideToggle, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="fd">
@@ -128,7 +132,14 @@ export interface ProductFormData {
                 <mat-label>{{ 'products.barcode' | translate }}</mat-label>
                 <span matPrefix class="material-symbols-outlined fd-field-icon">barcode_scanner</span>
                 <input matInput formControlName="barcode" />
+                <button mat-icon-button matSuffix type="button" (click)="scanBarcode()" [attr.aria-label]="'scan.title' | translate">
+                  <span class="material-symbols-outlined">photo_camera</span>
+                </button>
               </mat-form-field>
+              <div class="span-all track">
+                <mat-slide-toggle formControlName="trackExpiry">{{ 'expiry.track' | translate }}</mat-slide-toggle>
+                <p>{{ 'expiry.trackHint' | translate }}</p>
+              </div>
             </div>
           </section>
         </mat-dialog-content>
@@ -142,6 +153,10 @@ export interface ProductFormData {
       </form>
     </div>
   `,
+  styles: `
+    .track { display: flex; flex-direction: column; gap: 2px; }
+    .track p { margin: 0 0 0 52px; font-size: 0.82rem; color: var(--ds-muted); }
+  `,
 })
 export class ProductFormDialog {
   protected readonly data = inject<ProductFormData>(MAT_DIALOG_DATA);
@@ -149,6 +164,7 @@ export class ProductFormDialog {
   private readonly api = inject(ProductsApi);
   private readonly toast = inject(ToastService);
   private readonly auth = inject(AuthService);
+  private readonly scanner = inject(BarcodeScanner);
 
   protected readonly units = UNITS;
   protected readonly saving = signal(false);
@@ -164,7 +180,8 @@ export class ProductFormDialog {
     sellingPrice: [toRupees(this.data.product?.sellingPrice ?? this.data.sellingPrice ?? 0) || (null as unknown as number), [Validators.required, Validators.min(0)]],
     mrp: [toRupees(this.data.product?.mrp ?? 0), [Validators.min(0)]],
     openingStock: [0, [Validators.min(0)]],
-    barcode: [this.data.product?.barcode ?? ''],
+    barcode: [this.data.product?.barcode ?? this.data.barcode ?? ''],
+    trackExpiry: [this.data.product?.trackExpiry ?? false],
   });
 
   /** Live margin under the prices: percent of the selling price, and rupees per unit. */
@@ -175,6 +192,12 @@ export class ProductFormDialog {
       pct: Math.round(((sellingPrice - purchasePrice) / sellingPrice) * 1000) / 10,
       profit: formatPaise(toPaise(sellingPrice) - toPaise(purchasePrice)),
     };
+  }
+
+  protected scanBarcode(): void {
+    this.scanner.scan().subscribe((code) => {
+      if (code) this.form.controls.barcode.setValue(code);
+    });
   }
 
   protected save(): void {
@@ -194,6 +217,7 @@ export class ProductFormDialog {
       sellingPrice: toPaise(v.sellingPrice),
       mrp: toPaise(v.mrp),
       barcode: v.barcode.trim() || undefined,
+      trackExpiry: v.trackExpiry,
     };
     this.saving.set(true);
     const req = this.data.product

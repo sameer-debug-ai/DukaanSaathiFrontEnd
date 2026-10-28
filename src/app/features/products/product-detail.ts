@@ -3,14 +3,16 @@ import { Router, RouterLink } from '@angular/router';
 import { MatButton } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
-import type { Product, StockMovement } from '../../core/models/domain.models';
+import type { Product, ProductBatch, StockMovement } from '../../core/models/domain.models';
 import { AppEvents, StockAlertsService } from '../../core/services/app-events.service';
 import { ProductsApi } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
+import { istDay } from '../../core/utils/format';
 import { AliasChips } from '../../shared/components/alias-chips/alias-chips';
 import { ConfirmService } from '../../shared/components/confirm-dialog/confirm-dialog';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
 import { PageHeader } from '../../shared/components/page-header/page-header';
+import { RunOutLabel } from '../../shared/components/run-out/run-out';
 import { Skeleton } from '../../shared/components/skeleton/skeleton';
 import { StockBadge } from '../../shared/components/stock-badge/stock-badge';
 import { InrPipe } from '../../shared/pipes/inr.pipe';
@@ -29,7 +31,7 @@ const MOVE_STYLE: Record<StockMovement['type'], { icon: string; cls: string }> =
 
 @Component({
   selector: 'app-product-detail',
-  imports: [RouterLink, MatButton, TranslatePipe, PageHeader, Skeleton, EmptyState, StockBadge, InrPipe, IstDatePipe, AliasChips],
+  imports: [RouterLink, MatButton, TranslatePipe, PageHeader, Skeleton, EmptyState, StockBadge, InrPipe, IstDatePipe, AliasChips, RunOutLabel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="ds-page">
@@ -45,6 +47,10 @@ const MOVE_STYLE: Record<StockMovement['type'], { icon: string; cls: string }> =
             <div class="text-3xl font-bold my-1">{{ p.currentStock }} <span class="text-lg font-medium text-muted">{{ p.unit }}</span></div>
             <app-stock-badge [status]="p.stockStatus" />
             <div class="text-sm text-muted mt-2">{{ 'stock.minimum' | translate: { qty: p.lowStockThreshold } }}</div>
+            <div class="mt-1"><app-run-out [forecast]="p.forecast" [stock]="p.currentStock" /></div>
+            @if (p.forecast?.dailyRate) {
+              <div class="text-sm text-muted">{{ 'smart.perDay' | translate: { qty: p.forecast!.dailyRate, unit: p.unit } }}</div>
+            }
           </div>
           <div class="ds-card p-4">
             <dl class="facts">
@@ -64,6 +70,34 @@ const MOVE_STYLE: Record<StockMovement['type'], { icon: string; cls: string }> =
             </div>
           </div>
         </div>
+
+        @if (p.trackExpiry) {
+          <div class="ds-card overflow-hidden mb-4">
+            <div class="ds-section-title">
+              <h2><span class="material-symbols-outlined align-middle" aria-hidden="true">event</span> {{ 'expiry.batches' | translate }}</h2>
+              <span class="text-sm text-muted">{{ 'expiry.fefoHint' | translate }}</span>
+            </div>
+            @if (batches().length) {
+              <div class="ds-list">
+                @for (b of batches(); track b.id) {
+                  @let expired = isExpired(b);
+                  <div class="ds-list-item">
+                    <div class="flex-1 min-w-0">
+                      <div class="title">{{ b.qty }} {{ p.unit }}</div>
+                      <div class="sub">{{ b.expiryDate ? ('expiry.exp' | translate: { date: (b.expiryDate | istDate) }) : ('expiry.noDate' | translate) }}{{ b.note ? ' · ' + b.note : '' }}</div>
+                    </div>
+                    @if (expired) {
+                      <span class="ds-badge danger">{{ 'expiry.expired' | translate }}</span>
+                      <button mat-button class="text-danger" (click)="writeOff(p, b)">{{ 'expiry.writeOff' | translate }}</button>
+                    }
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="text-sm text-muted px-4 pb-4 m-0">{{ 'expiry.noBatches' | translate }}</p>
+            }
+          </div>
+        }
 
         <div class="ds-card p-4 mb-4">
           <app-alias-chips [aliases]="p.aliases" [busy]="aliasBusy()" (remove)="removeAlias(p, $event)" />
@@ -117,6 +151,7 @@ export class ProductDetail {
 
   protected readonly product = signal<Product | null>(null);
   protected readonly history = signal<StockMovement[]>([]);
+  protected readonly batches = signal<ProductBatch[]>([]);
   protected readonly page = signal(1);
   protected readonly hasMore = signal(false);
   protected readonly moveStyle = MOVE_STYLE;
@@ -130,7 +165,14 @@ export class ProductDetail {
   }
 
   private load(id: string): void {
-    this.api.get(id).subscribe({ next: (p) => this.product.set(p), error: (e) => this.toast.apiError(e) });
+    this.api.get(id).subscribe({
+      next: (p) => {
+        this.product.set(p);
+        if (p.trackExpiry) this.api.batches(id).subscribe({ next: (b) => this.batches.set(b), error: () => undefined });
+        else this.batches.set([]);
+      },
+      error: (e) => this.toast.apiError(e),
+    });
     this.loadHistory(1);
   }
 
@@ -150,6 +192,26 @@ export class ProductDetail {
         this.toast.apiError(e);
       },
     });
+  }
+
+  protected isExpired(b: ProductBatch): boolean {
+    return !!b.expiryDate && istDay(new Date(b.expiryDate)) < istDay();
+  }
+
+  /** Removes an expired batch from stock as damage. */
+  protected writeOff(p: Product, b: ProductBatch): void {
+    this.confirm
+      .ask({ message: this.t.instant('expiry.confirmWriteOff', { qty: b.qty, unit: p.unit, name: p.name }), confirmText: this.t.instant('expiry.writeOff'), danger: true })
+      .subscribe((ok) => {
+        if (!ok) return;
+        this.api.adjustStock({ productId: p.id, quantity: b.qty, type: 'damage', note: 'Expired', batchId: b.id }).subscribe({
+          next: () => {
+            this.toast.success('expiry.writtenOff', { name: p.name });
+            this.changed();
+          },
+          error: (e) => this.toast.apiError(e),
+        });
+      });
   }
 
   protected loadHistory(page: number): void {

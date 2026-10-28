@@ -23,6 +23,82 @@ export interface Product {
   stockStatus: StockStatus;
   createdAt: string;
   updatedAt: string;
+  /** "Expiry track karo": stock kept in batches with expiry dates (FEFO). */
+  trackExpiry?: boolean;
+  /** Selling-rate forecast (list / detail / barcode lookups). */
+  forecast?: StockForecast;
+}
+
+export interface StockForecast {
+  /** Units sold per day, weighted towards recent days. */
+  dailyRate: number;
+  /** Whole days the stock will last; null when it is not selling. */
+  daysLeft: number | null;
+}
+
+export interface ProductBatch {
+  id: string;
+  qty: number;
+  initialQty: number;
+  expiryDate: string | null;
+  purchaseId: string | null;
+  note: string;
+  createdAt: string;
+}
+
+export interface RunOutItem {
+  id: string;
+  name: string;
+  nameHindi: string;
+  unit: Unit;
+  currentStock: number;
+  dailyRate: number;
+  daysLeft: number;
+}
+export interface RunOutList {
+  maxDays: number;
+  within3: number;
+  within7: number;
+  items: RunOutItem[];
+}
+
+export interface ReorderItem {
+  productId: string;
+  name: string;
+  nameHindi: string;
+  unit: Unit;
+  currentStock: number;
+  dailyRate: number;
+  daysLeft: number | null;
+  qty: number;
+  /** Last purchase price, paise per unit. */
+  rate: number;
+  reason: 'forecast' | 'low_stock';
+}
+export interface ReorderGroup {
+  supplier: { id: string; name: string; phone: string } | null;
+  items: ReorderItem[];
+  total: number;
+}
+export interface ReorderList {
+  days: number;
+  groups: ReorderGroup[];
+}
+
+export interface ExpiryItem {
+  batchId: string;
+  productId: string;
+  name: string;
+  unit: Unit;
+  qty: number;
+  expiryDate: string;
+  /** Negative when already expired. */
+  daysLeft: number;
+}
+export interface ExpiryAlerts {
+  days: number;
+  expired: ExpiryItem[];
+  expiringSoon: ExpiryItem[];
 }
 
 /** 'reversal' = a voice entry was undone and its stock put back. */
@@ -402,9 +478,18 @@ export interface VoiceStockRow {
   lowStockThreshold: number;
 }
 
+/** In stock, but the selling rate says it runs out within a week. */
+export interface VoiceRunOutRow {
+  id: string;
+  name: string;
+  stock: number;
+  unit: string;
+  daysLeft: number;
+}
+
 /** Structured answer to a voice question, shown as a list/card instead of a sentence. */
 export type VoiceAnswerData =
-  | { kind: 'stock_list'; onlyOut: boolean; outCount: number; lowCount: number; items: VoiceStockRow[] }
+  | { kind: 'stock_list'; onlyOut: boolean; outCount: number; lowCount: number; items: VoiceStockRow[]; soon?: VoiceRunOutRow[] }
   | { kind: 'stock_item'; productId: string; name: string; stock: number; unit: string; status: StockStatus; lowStockThreshold: number }
   | { kind: 'balance'; customerId: string; name: string; balance: number }
   | { kind: 'summary'; period: string; from: string; to: string; sales: number; bills: number; udhaarGiven: number; paymentsReceived: number }
