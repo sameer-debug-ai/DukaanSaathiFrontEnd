@@ -31,6 +31,24 @@ const START_TIMEOUT_MS = 8000;
 const SILENCE_MS = 1800;
 
 /**
+ * Android Chrome (continuous mode) sends every result with the WHOLE phrase so far
+ * ("एक", "एक नया", "एक नया बंदा"), not just the new words like desktop does. Joining them
+ * repeats the sentence, so a part that starts with the text so far replaces it.
+ */
+export function joinCumulative(parts: string[]): string {
+  let acc = '';
+  for (const raw of parts) {
+    const p = raw.replace(/\s+/g, ' ').trim();
+    if (!p) continue;
+    if (!acc || p.startsWith(acc)) acc = p;
+    else if (!acc.endsWith(p)) acc += ' ' + p;
+  }
+  return acc;
+}
+
+const IS_ANDROID = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+
+/**
  * Wraps browser speech recognition + synthesis. Recognition runs on-device /
  * in the browser; only the final text is sent to our server.
  */
@@ -89,6 +107,21 @@ export class SpeechService {
     rec.onstart = () => this.zone.run(() => this.listening.set(true));
     rec.onresult = (e) =>
       this.zone.run(() => {
+        if (IS_ANDROID) {
+          const finals: string[] = [];
+          const interims: string[] = [];
+          for (let i = 0; i < e.results.length; i++) {
+            const r = e.results[i]!;
+            (r.isFinal ? finals : interims).push(r[0].transcript);
+          }
+          const fin = joinCumulative(finals);
+          let int = joinCumulative(interims);
+          if (fin && int.startsWith(fin)) int = int.slice(fin.length).trim();
+          this.transcript.set(fin);
+          this.interim.set(int);
+          this.armTimer(rec, SILENCE_MS);
+          return;
+        }
         let finalText = '';
         let interim = '';
         for (let i = 0; i < e.results.length; i++) {
