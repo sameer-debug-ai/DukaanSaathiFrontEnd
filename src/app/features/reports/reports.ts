@@ -3,6 +3,7 @@ import { MatButton } from '@angular/material/button';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import type { ChartConfiguration } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
+import { AuthService } from '../../core/auth/auth.service';
 import type { Report, ReportName } from '../../core/models/domain.models';
 import { ReportsApi } from '../../core/services/data.services';
 import { PdfService } from '../../core/services/pdf.service';
@@ -27,7 +28,11 @@ const REPORTS: { id: ReportName; key: string; icon: string; ranged: boolean }[] 
   { id: 'product-sales', key: 'reports.productSales', icon: 'shopping_bag', ranged: true },
   { id: 'stock-valuation', key: 'reports.stock', icon: 'inventory', ranged: false },
   { id: 'aging', key: 'reports.aging', icon: 'hourglass_bottom', ranged: false },
+  // GST shops only (see `reports` below).
+  { id: 'gst-register', key: 'reports.gstRegister', icon: 'receipt_long', ranged: true },
+  { id: 'gst-hsn', key: 'reports.gstHsn', icon: 'category', ranged: true },
 ];
+const GST_REPORTS: ReportName[] = ['gst-register', 'gst-hsn'];
 
 /** Headline tiles per report, picked from the report totals. */
 const TILES: Record<ReportName, { key: string; total: string; tone: StatTone; icon: string; kind?: 'number' | 'percent' }[]> = {
@@ -67,6 +72,17 @@ const TILES: Record<ReportName, { key: string; total: string; tone: StatTone; ic
     { key: 'reports.t.d61_90', total: 'd61_90', tone: 'danger', icon: 'hourglass_bottom' },
     { key: 'reports.t.d90_plus', total: 'd90_plus', tone: 'danger', icon: 'error' },
   ],
+  'gst-register': [
+    { key: 'reports.t.taxable', total: 'taxable', tone: 'brand', icon: 'receipt_long' },
+    { key: 'reports.t.cgst', total: 'cgst', tone: 'neutral', icon: 'account_balance' },
+    { key: 'reports.t.sgst', total: 'sgst', tone: 'neutral', icon: 'account_balance' },
+    { key: 'reports.t.igst', total: 'igst', tone: 'warn', icon: 'public' },
+  ],
+  'gst-hsn': [
+    { key: 'reports.t.taxable', total: 'taxable', tone: 'brand', icon: 'receipt_long' },
+    { key: 'reports.t.gstTotal', total: 'gstTotal', tone: 'warn', icon: 'account_balance' },
+    { key: 'reports.t.invoiceValue', total: 'value', tone: 'ok', icon: 'payments' },
+  ],
 };
 
 @Component({
@@ -83,7 +99,13 @@ export class Reports implements OnInit {
   private readonly theme = inject(ThemeService);
   private readonly t = inject(TranslateService);
 
-  protected readonly reports = REPORTS;
+  private readonly auth = inject(AuthService);
+  /** GST register / HSN summary only for shops that issue tax invoices. */
+  protected readonly reports = computed(() => {
+    const b = this.auth.user()?.billing;
+    const gst = !!b?.gstEnabled && !b.composition;
+    return REPORTS.filter((r) => gst || !GST_REPORTS.includes(r.id));
+  });
   protected readonly active = signal<ReportName>('sales');
   protected readonly report = signal<Report | null>(null);
   protected readonly loading = signal(true);
@@ -94,7 +116,11 @@ export class Reports implements OnInit {
   protected readonly tiles = computed(() => {
     const r = this.report();
     if (!r) return [];
-    const totals = { ...r.totals, cashUpi: (r.totals['cash'] ?? 0) + (r.totals['upi'] ?? 0) };
+    const totals = {
+      ...r.totals,
+      cashUpi: (r.totals['cash'] ?? 0) + (r.totals['upi'] ?? 0),
+      gstTotal: (r.totals['cgst'] ?? 0) + (r.totals['sgst'] ?? 0) + (r.totals['igst'] ?? 0),
+    };
     return TILES[this.active()].map((t) => {
       const v = totals[t.total as keyof typeof totals] ?? 0;
       return { ...t, value: t.kind === 'number' ? String(v) : t.kind === 'percent' ? `${v}%` : formatPaise(v) };
@@ -166,6 +192,24 @@ export class Reports implements OnInit {
       next: (blob) => this.share.download(blob, `${this.active()}-${from ?? istDay()}-${to ?? istDay()}.csv`),
       error: (e) => this.toast.apiError(e),
     });
+  }
+
+  /** Excel copy of the table (money in rupees as numbers, so sums work in the sheet). */
+  protected async exportExcel(): Promise<void> {
+    const r = this.report();
+    if (!r) return;
+    const XLSX = await import('xlsx');
+    const value = (type: string, v: unknown) => (type === 'money' ? Math.round(Number(v) || 0) / 100 : type === 'number' ? Number(v) || 0 : v ?? '');
+    const rows = [
+      r.columns.map((c) => (c.type === 'money' ? `${c.label} (Rs)` : c.label)),
+      ...r.rows.map((row) => r.columns.map((c) => value(c.type, row[c.key]))),
+      r.columns.map((c, i) => (i === 0 ? 'TOTAL' : c.key in r.totals ? value(c.type, r.totals[c.key]) : '')),
+    ];
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), r.title.slice(0, 31));
+    const data = XLSX.write(book, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer;
+    const { from, to } = this.ranged() ? this.range() : { from: undefined, to: undefined };
+    this.share.download(new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `${this.active()}-${from ?? istDay()}-${to ?? istDay()}.xlsx`);
   }
 
   protected async exportPdf(): Promise<void> {

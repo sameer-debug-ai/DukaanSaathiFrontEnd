@@ -19,11 +19,12 @@ import { istDay } from '../../core/utils/format';
 import { VPA_RX } from '../../core/utils/upi';
 import { PageHeader } from '../../shared/components/page-header/page-header';
 import { VoiceReplies } from '../voice/voice-replies.service';
+import { BillSettingsCard } from './bill-settings-card';
 import { VoiceStt } from '../voice/voice-stt.service';
 
 @Component({
   selector: 'app-settings',
-  imports: [ReactiveFormsModule, MatButton, MatButtonToggleModule, MatFormFieldModule, MatInput, MatSlideToggle, TranslatePipe, PageHeader],
+  imports: [ReactiveFormsModule, MatButton, MatButtonToggleModule, MatFormFieldModule, MatInput, MatSlideToggle, TranslatePipe, PageHeader, BillSettingsCard],
   templateUrl: './settings.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -25,6 +25,10 @@ export interface Product {
   updatedAt: string;
   /** "Expiry track karo": stock kept in batches with expiry dates (FEFO). */
   trackExpiry?: boolean;
+  /** GST (used when the shop has GST on). */
+  hsnCode?: string;
+  gstRate?: number;
+  priceIncludesGst?: boolean;
   /** Selling-rate forecast (list / detail / barcode lookups). */
   forecast?: StockForecast;
 }
@@ -129,6 +133,9 @@ export interface Customer {
   aliases: string[];
   phone: string;
   address: string;
+  /** B2B bills (GST shops). */
+  gstin?: string;
+  stateCode?: string;
   creditLimit?: number;
   currentBalance: number;
   lastTransactionAt?: string;
@@ -301,13 +308,64 @@ export interface SupplierHistoryRow {
 
 export type SalePaymentMode = 'cash' | 'upi' | 'udhaar' | 'partial';
 
+/** bill = no GST, tax_invoice = GST, bill_of_supply = composition scheme. */
+export type DocType = 'bill' | 'tax_invoice' | 'bill_of_supply';
+
+export interface TaxRow {
+  rate: number;
+  taxable: number;
+  cgst: number;
+  sgst: number;
+  igst: number;
+}
+
+export interface BillParty {
+  name: string;
+  address: string;
+  phone: string;
+  gstin: string;
+  stateCode: string;
+}
+
+/** GST bill line extras (present only on tax invoices). */
+export interface GstLine {
+  hsnCode?: string;
+  gstRate?: number;
+  priceIncludesGst?: boolean;
+  discountShare?: number;
+  taxable?: number;
+  cgst?: number;
+  sgst?: number;
+  igst?: number;
+}
+
 export interface Sale {
   id: string;
   billNumber: number;
+  /** KGS/2026-27/0001; older bills have none (shown as #billNumber). */
+  invoiceNo?: string;
+  fy?: string;
+  docType?: DocType;
+  seller?: BillParty;
+  buyer?: BillParty;
+  taxableTotal?: number;
+  cgst?: number;
+  sgst?: number;
+  igst?: number;
+  taxTotal?: number;
+  taxAdded?: number;
+  roundOff?: number;
+  taxSummary?: TaxRow[];
+  interState?: boolean;
+  status?: 'active' | 'cancelled';
+  cancelledAt?: string;
+  cancelReason?: string;
+  /** From the API (bill detail / just saved): total in words. */
+  amountInWords?: { en: string; hi: string };
   customerId?: string;
-  customer?: { id: string; name: string; phone?: string; address?: string; currentBalance?: number } | null;
+  customer?: { id: string; name: string; phone?: string; address?: string; currentBalance?: number; gstin?: string; stateCode?: string } | null;
   customerName: string;
-  items: LineItem[];
+  items: (LineItem & GstLine)[];
   subtotal: number;
   discount: number;
   totalAmount: number;
@@ -348,7 +406,7 @@ export interface DashboardCharts {
   udhaar: { day: string; given: number; recovered: number }[];
 }
 
-export type ReportName = 'sales' | 'profit' | 'udhaar' | 'supplier-purchases' | 'stock-valuation' | 'product-sales' | 'aging';
+export type ReportName = 'sales' | 'profit' | 'udhaar' | 'supplier-purchases' | 'stock-valuation' | 'product-sales' | 'aging' | 'gst-register' | 'gst-hsn';
 
 export interface Report {
   title: string;

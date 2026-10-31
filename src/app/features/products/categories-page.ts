@@ -3,6 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { TranslatePipe } from '@ngx-translate/core';
+import { AuthService } from '../../core/auth/auth.service';
+import { BillingApi, GST_RATES } from '../../core/services/billing.api';
 import { CategoriesApi, type Category } from '../../core/services/categories.api';
 import { ToastService } from '../../core/services/toast.service';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
@@ -69,6 +71,19 @@ import { Skeleton } from '../../shared/components/skeleton/skeleton';
                   <button mat-flat-button type="submit" [disabled]="!editName().trim() || busy()">{{ 'common.save' | translate }}</button>
                   <button mat-button type="button" (click)="editing.set(null)">{{ 'common.cancel' | translate }}</button>
                 </form>
+              } @else if (gstFor() === c.id) {
+                <form class="edit gst" (ngSubmit)="applyGst(c)">
+                  <span class="name">{{ c.name }}</span>
+                  <div class="rates">
+                    @for (r of gstRates; track r) {
+                      <button type="button" class="ds-chip" [class.active]="gstRate() === r" (click)="gstRate.set(r)">{{ r }}%</button>
+                    }
+                    <input class="edit-input rate" type="number" name="gstRate" min="0" max="100" step="0.01" [ngModel]="gstRate()" (ngModelChange)="gstRate.set($event)" [attr.aria-label]="'products.gstRate' | translate" />
+                  </div>
+                  <input class="edit-input" name="gstHsn" inputmode="numeric" maxlength="8" [ngModel]="gstHsn()" (ngModelChange)="gstHsn.set($event)" [placeholder]="'categories.hsnOptional' | translate" autocomplete="off" />
+                  <button mat-flat-button type="submit" [disabled]="busy()">{{ 'categories.applyGst' | translate: { count: c.productCount } }}</button>
+                  <button mat-button type="button" (click)="gstFor.set(null)">{{ 'common.cancel' | translate }}</button>
+                </form>
               } @else {
                 <div class="info">
                   <span class="name">{{ c.name }}</span>
@@ -79,6 +94,11 @@ import { Skeleton } from '../../shared/components/skeleton/skeleton';
                     }
                   </span>
                 </div>
+                @if (gstOn) {
+                  <button type="button" class="icon-btn" (click)="startGst(c)" [attr.aria-label]="'categories.setGst' | translate: { name: c.name }">
+                    <span class="material-symbols-outlined">percent</span>
+                  </button>
+                }
                 <button type="button" class="icon-btn" (click)="startEdit(c)" [attr.aria-label]="'categories.rename' | translate">
                   <span class="material-symbols-outlined">edit</span>
                 </button>
@@ -120,6 +140,10 @@ import { Skeleton } from '../../shared/components/skeleton/skeleton';
     .icon-btn:hover { background: var(--ds-surface); color: var(--ds-brand); }
     .edit { flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .edit-input { border: 1px solid var(--ds-brand); border-radius: 10px; padding: 0 12px; }
+    .gst { padding: 6px 0; }
+    .gst .name { flex-basis: 100%; }
+    .gst .rates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; flex-basis: 100%; }
+    .gst .rate { flex: 0 0 76px; }
     .note { margin: 12px 4px 0; font-size: 0.85rem; color: var(--ds-muted); }
   `,
 })
@@ -136,6 +160,13 @@ export class CategoriesPage implements OnInit {
   protected readonly editing = signal<string | null>(null);
   protected readonly editName = signal('');
   private readonly addInput = viewChild.required<ElementRef<HTMLInputElement>>('addInput');
+  private readonly billing = inject(BillingApi);
+  /** GST shops can set one GST rate for every product of a category. */
+  protected readonly gstOn = !!inject(AuthService).user()?.billing?.gstEnabled;
+  protected readonly gstRates = GST_RATES;
+  protected readonly gstFor = signal<string | null>(null);
+  protected readonly gstRate = signal<number>(5);
+  protected readonly gstHsn = signal('');
 
   protected readonly shown = computed(() => {
     const f = this.filter();
@@ -181,7 +212,33 @@ export class CategoriesPage implements OnInit {
     });
   }
 
+  protected startGst(c: Category): void {
+    this.editing.set(null);
+    this.gstHsn.set('');
+    this.gstFor.set(c.id);
+  }
+
+  protected applyGst(c: Category): void {
+    const rate = Number(this.gstRate());
+    const hsn = this.gstHsn().trim();
+    if (!(rate >= 0 && rate <= 100)) return this.toast.error('categories.gstInvalid');
+    if (hsn && !/^(\d{4}|\d{6}|\d{8})$/.test(hsn)) return this.toast.error('products.hsnInvalid');
+    this.busy.set(true);
+    this.billing.gstByCategory({ category: c.name, gstRate: rate, ...(hsn ? { hsnCode: hsn } : {}) }).subscribe({
+      next: (r) => {
+        this.busy.set(false);
+        this.gstFor.set(null);
+        this.toast.success('categories.gstApplied', { count: r.matched, rate, name: c.name });
+      },
+      error: (e) => {
+        this.busy.set(false);
+        this.toast.apiError(e);
+      },
+    });
+  }
+
   protected startEdit(c: Category): void {
+    this.gstFor.set(null);
     this.editName.set(c.name);
     this.editing.set(c.id);
   }

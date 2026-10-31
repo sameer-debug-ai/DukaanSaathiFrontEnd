@@ -6,6 +6,7 @@ import type { Sale, SalePaymentMode } from '../../core/models/domain.models';
 import { AppEvents } from '../../core/services/app-events.service';
 import { SalesApi } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
+import { billLabel } from '../../core/utils/bill';
 import { daysAgo, istDay } from '../../core/utils/format';
 import { DateRange, type DateRangeValue } from '../../shared/components/date-range/date-range';
 import { EmptyState } from '../../shared/components/empty-state/empty-state';
@@ -34,8 +35,9 @@ export const MODE_BADGE: Record<SalePaymentMode, string> = { cash: 'ok', upi: 'i
         </div>
         <div class="ds-chips">
           @for (m of modes; track m) {
-            <button class="ds-chip" [class.active]="mode() === m" (click)="setMode(m)">{{ (m ? 'pay.' + m : 'products.filterAll') | translate }}</button>
+            <button class="ds-chip" [class.active]="mode() === m && !cancelledOnly()" (click)="setMode(m)">{{ (m ? 'pay.' + m : 'products.filterAll') | translate }}</button>
           }
+          <button class="ds-chip" [class.active]="cancelledOnly()" (click)="toggleCancelled()">{{ 'bill.cancelledFilter' | translate }}</button>
         </div>
       </div>
 
@@ -61,12 +63,15 @@ export const MODE_BADGE: Record<SalePaymentMode, string> = { cash: 'ok', upi: 'i
             <tbody>
               @for (s of items(); track s.id) {
                 <tr class="clickable" [routerLink]="['/sales', s.id]">
-                  <td class="font-semibold">#{{ s.billNumber }}</td>
+                  <td class="font-semibold">
+                    {{ label(s) }}
+                    @if (s.status === 'cancelled') { <span class="ds-badge danger">{{ 'bill.cancelledShort' | translate }}</span> }
+                  </td>
                   <td>{{ s.date | istDate: true }}</td>
                   <td>{{ s.customerName || ('billing.walkIn' | translate) }}</td>
                   <td class="text-muted">{{ itemsLabel(s) }}</td>
                   <td><span class="ds-badge" [class]="'ds-badge ' + modeBadge[s.paymentMode]">{{ ('pay.' + s.paymentMode) | translate }}</span></td>
-                  <td class="num font-semibold">{{ s.totalAmount | inr }}</td>
+                  <td class="num font-semibold" [class.void]="s.status === 'cancelled'">{{ s.totalAmount | inr }}</td>
                 </tr>
               }
             </tbody>
@@ -74,14 +79,18 @@ export const MODE_BADGE: Record<SalePaymentMode, string> = { cash: 'ok', upi: 'i
           <div class="ds-list md:hidden">
             @for (s of items(); track s.id) {
               <a class="ds-list-item" [routerLink]="['/sales', s.id]">
-                <span class="ds-avatar">#{{ s.billNumber }}</span>
+                <span class="ds-avatar">{{ shortNo(s) }}</span>
                 <div class="flex-1 min-w-0">
                   <div class="title">{{ s.customerName || ('billing.walkIn' | translate) }}</div>
-                  <div class="sub">{{ s.date | istDate: true }} · {{ itemsLabel(s) }}</div>
+                  <div class="sub">{{ label(s) }} · {{ s.date | istDate: true }} · {{ itemsLabel(s) }}</div>
                 </div>
                 <div class="text-right">
-                  <div class="font-semibold tabular">{{ s.totalAmount | inr }}</div>
-                  <span class="ds-badge" [class]="'ds-badge ' + modeBadge[s.paymentMode]">{{ ('pay.' + s.paymentMode) | translate }}</span>
+                  <div class="font-semibold tabular" [class.void]="s.status === 'cancelled'">{{ s.totalAmount | inr }}</div>
+                  @if (s.status === 'cancelled') {
+                    <span class="ds-badge danger">{{ 'bill.cancelledShort' | translate }}</span>
+                  } @else {
+                    <span class="ds-badge" [class]="'ds-badge ' + modeBadge[s.paymentMode]">{{ ('pay.' + s.paymentMode) | translate }}</span>
+                  }
                 </div>
               </a>
             }
@@ -92,6 +101,9 @@ export const MODE_BADGE: Record<SalePaymentMode, string> = { cash: 'ok', upi: 'i
         }
       </div>
     </section>
+  `,
+  styles: `
+    .void { text-decoration: line-through; color: var(--ds-muted); }
   `,
 })
 export class SalesList {
@@ -108,6 +120,8 @@ export class SalesList {
   protected readonly page = signal(1);
   protected readonly hasMore = signal(false);
   protected readonly mode = signal<SalePaymentMode | ''>('');
+  protected readonly cancelledOnly = signal(false);
+  protected readonly label = billLabel;
   private range: DateRangeValue = { from: daysAgo(6), to: istDay() };
   private search = '';
 
@@ -120,7 +134,7 @@ export class SalesList {
 
   private load(page: number): void {
     if (page === 1) this.loading.set(true);
-    this.api.list({ ...this.range, search: this.search, paymentMode: this.mode(), page, limit: 40 }).subscribe({
+    this.api.list({ ...this.range, search: this.search, paymentMode: this.mode(), status: this.cancelledOnly() ? 'cancelled' : undefined, page, limit: 40 }).subscribe({
       next: (r) => {
         this.items.update((cur) => (page === 1 ? r.data : [...cur, ...r.data]));
         this.total.set(Number(r.meta?.total ?? 0));
@@ -149,7 +163,17 @@ export class SalesList {
   }
   protected setMode(m: SalePaymentMode | ''): void {
     this.mode.set(m);
+    this.cancelledOnly.set(false);
     this.load(1);
+  }
+  protected toggleCancelled(): void {
+    this.cancelledOnly.update((v) => !v);
+    this.mode.set('');
+    this.load(1);
+  }
+  /** Avatar text: the bill's running number in the year (0001), or #12 for older bills. */
+  protected shortNo(s: Sale): string {
+    return s.invoiceNo ? s.invoiceNo.split('/').pop()! : `#${s.billNumber}`;
   }
   protected itemsLabel(s: Sale): string {
     const names = s.items.slice(0, 2).map((i) => i.name).join(', ');

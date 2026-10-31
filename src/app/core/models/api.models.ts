@@ -20,6 +20,25 @@ export interface Paged<T> {
 
 export type Language = 'hi' | 'en';
 
+export type PaperSize = '58mm' | '80mm' | 'a4';
+
+/** What goes on a printed bill; empty name/address/phone fall back to the profile. */
+export interface BillingSettings {
+  shopName: string;
+  address: string;
+  phone: string;
+  /** data: URL */
+  logo: string;
+  footerNote: string;
+  paperSize: PaperSize;
+  showUpiQr: boolean;
+  invoicePrefix: string;
+  gstEnabled: boolean;
+  gstin: string;
+  stateCode: string;
+  composition: boolean;
+}
+
 export interface ShopSettings {
   lowStockDefault: number;
   allowOversell: boolean;
@@ -48,6 +67,8 @@ export interface User {
   gstNumber?: string;
   preferredLanguage: Language;
   settings: ShopSettings;
+  /** Bill printing + GST (Settings -> Bill & GST). */
+  billing?: BillingSettings;
   createdAt: string;
   updatedAt: string;
 }

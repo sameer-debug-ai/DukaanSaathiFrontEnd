@@ -100,6 +100,11 @@ export class AuthService {
     );
   }
 
+  /** Keeps the signed-in user in step after a change saved elsewhere (e.g. bill settings). */
+  patchUser(patch: Partial<User>): void {
+    this._user.update((u) => (u ? { ...u, ...patch } : u));
+  }
+
   clearSession(): void {
     this.accessToken = null;
     this._user.set(null);

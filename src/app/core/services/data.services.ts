@@ -50,6 +50,9 @@ export interface ProductInput {
   openingStock?: number;
   supplierId?: string;
   trackExpiry?: boolean;
+  hsnCode?: string;
+  gstRate?: number;
+  priceIncludesGst?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -126,6 +129,9 @@ export interface CustomerInput {
   reminderEveryDays?: 0 | 7 | 15 | 30;
   /** "YYYY-MM-DD"; null clears it. */
   dueDate?: string | null;
+  /** B2B (GST shops): GSTIN, and its state code. */
+  gstin?: string;
+  stateCode?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -257,6 +263,9 @@ export interface SaleInput {
   allowOversell?: boolean;
   date?: string;
   source?: 'manual' | 'voice';
+  /** GST shops, B2B: buyer typed on the bill. */
+  buyerName?: string;
+  buyerGstin?: string;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -245,7 +245,12 @@
     "import": "Import CSV / Excel",
     "export": "Export CSV",
     "emptyTitle": "No products found",
-    "emptyHint": "Add a product or change the filters."
+    "emptyHint": "Add a product or change the filters.",
+    "gstRate": "GST rate",
+    "hsn": "HSN code",
+    "hsnInvalid": "HSN code is 4, 6 or 8 digits",
+    "priceIncludesGst": "Selling price includes GST",
+    "priceIncludesGstHint": "On for MRP-style prices. Off: GST is added on top at billing."
   },
   "alerts": {
     "title": "Low & out of stock",
@@ -311,7 +316,9 @@
     "remindShort": "Remind",
     "statement": "Download statement (PDF)",
     "statementShort": "Statement PDF",
-    "noPhoneHint": "Add a phone number to send WhatsApp reminders directly."
+    "noPhoneHint": "Add a phone number to send WhatsApp reminders directly.",
+    "gstin": "GSTIN (business customers)",
+    "gstinHint": "Their bills show this GSTIN; another state means IGST."
   },
   "ledger": {
     "title": "Ledger",
@@ -438,7 +445,7 @@
     "subtotal": "Subtotal",
     "toUdhaar": "To udhaar",
     "save": "Save bill",
-    "saved": "Bill #{{number}} saved",
+    "saved": "Bill {{number}} saved",
     "needCustomer": "Select a customer for udhaar or partial payment",
     "partialInvalid": "For partial payment, enter an amount less than the total",
     "outOfStockWarn": "{{name}} is out of stock",
@@ -491,7 +498,13 @@
       "atSale": "Value at selling price",
       "d31_60": "31-60 days",
       "d61_90": "61-90 days",
-      "d90_plus": "Over 90 days"
+      "d90_plus": "Over 90 days",
+      "taxable": "Taxable value",
+      "cgst": "CGST",
+      "sgst": "SGST",
+      "igst": "IGST",
+      "gstTotal": "Total GST",
+      "invoiceValue": "Invoice value"
     },
     "col": {
       "day": "Date",
@@ -531,7 +544,9 @@
       "Profit": "Profit",
       "Udhaar": "Udhaar"
     },
-    "aging": "Old udhaar (aging)"
+    "aging": "Old udhaar (aging)",
+    "gstRegister": "GST sales register",
+    "gstHsn": "HSN summary"
   },
   "settings": {
     "title": "Settings",
@@ -966,6 +981,87 @@
     "empty": "No categories yet",
     "emptyHint": "Add one above, or they appear here when you add products with a category.",
     "note": "Inactive categories are not shown in the \"Add product\" dropdown. Their products stay as they are. Renaming moves its products to the new name.",
-    "typeName": "Type the category name first"
+    "typeName": "Type the category name first",
+    "setGst": "Set GST rate for {{name}}",
+    "hsnOptional": "HSN (optional)",
+    "applyGst": "Apply to {{count}} products",
+    "gstInvalid": "GST rate must be between 0 and 100",
+    "gstApplied": "{{rate}}% GST set on {{count}} products in {{name}}"
+  },
+  "bill": {
+    "cancelled": "CANCELLED",
+    "cancelledShort": "Cancelled",
+    "cancelledFilter": "Cancelled",
+    "ph": "Ph:",
+    "doc": {
+      "bill": "Bill",
+      "tax_invoice": "Tax Invoice",
+      "bill_of_supply": "Bill of Supply"
+    },
+    "no": "Bill no.",
+    "date": "Date",
+    "to": "To",
+    "pos": "Place of supply",
+    "taxable": "Taxable value",
+    "taxAddedNote": "GST added on top",
+    "roundOff": "Round off",
+    "compositionNote": "Composition taxable person, not eligible to collect tax on supplies.",
+    "scanToPay": "Scan to pay {{amount}} by UPI",
+    "cancelReason": "Reason",
+    "for": "For",
+    "signatory": "Authorised signatory",
+    "cancelledOn": "Cancelled on {{date}}",
+    "paperSize": "Paper",
+    "size": {
+      "58mm": "58 mm",
+      "80mm": "80 mm",
+      "a4": "A4"
+    },
+    "btPrint": "Bluetooth print",
+    "btPrintTo": "Print to {{name}}",
+    "btDone": "Sent to the printer",
+    "btFailed": "Could not print. Switch the printer on, keep it close and try again. If it still fails, use Print.",
+    "btUnsupported": {
+      "ios": "iPhone and iPad cannot print directly over Bluetooth. Use Print instead (works with AirPrint printers), or share the PDF.",
+      "browser": "This browser cannot talk to Bluetooth printers. Use Chrome on Android or a computer, or use Print.",
+      "insecure": "Bluetooth printing needs the app to be opened over https. Use Print instead."
+    },
+    "cancel": "Cancel bill",
+    "cancelTitle": "Cancel bill {{label}}?",
+    "cancelStock": "The items go back into stock.",
+    "cancelUdhaar": "{{amount}} udhaar is taken off the customer's khata.",
+    "cancelRefund": "{{amount}} was paid at the counter: return it to the customer yourself.",
+    "cancelKeep": "The bill and its number stay in history, marked cancelled.",
+    "cancelReasonHint": "e.g. Customer returned everything",
+    "cancelConfirm": "Cancel bill",
+    "cancelledToast": "Bill {{label}} cancelled",
+    "gstinInvalid": "Enter a valid 15-character GSTIN, e.g. 27ABCDE1234F1Z5",
+    "buyerName": "Business name",
+    "addB2b": "Bill to a business (GSTIN)"
+  },
+  "billSettings": {
+    "title": "Bill & GST",
+    "hint": "What goes on printed and shared bills. Leave name, phone or address empty to use your profile.",
+    "shopName": "Shop name on bill",
+    "phone": "Phone on bill",
+    "address": "Address on bill",
+    "footer": "Footer note",
+    "footerPh": "Dhanyavaad, phir aayiye",
+    "removeLogo": "Remove logo",
+    "noLogo": "No logo",
+    "pickLogo": "Add logo",
+    "logoFailed": "Could not read that image",
+    "numbering": "Bill numbers",
+    "prefix": "Prefix",
+    "prefixHint": "Up to 4 letters or digits. Numbers restart every 1 April.",
+    "prefixInvalid": "Up to 4 letters or digits",
+    "next": "Bills look like",
+    "upiQr": "Print a UPI QR on bills with udhaar",
+    "gstOn": "Main GST registered hoon",
+    "gstHint": "Off: simple bills. On: tax invoices with CGST/SGST or IGST, HSN codes and GST reports.",
+    "state": "State",
+    "stateHint": "Filled from the GSTIN",
+    "composition": "Composition scheme",
+    "compositionHint": "Bills become \"Bill of Supply\" without tax."
   }
 }

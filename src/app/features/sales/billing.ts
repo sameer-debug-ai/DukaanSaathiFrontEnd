@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { afterNextRender, ChangeDetectionStrategy, Component, computed, ElementRef, inject, Injector, OnInit, signal } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, Injector, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -9,7 +9,9 @@ import { AuthService } from '../../core/auth/auth.service';
 import type { Customer, Product, SalePaymentMode } from '../../core/models/domain.models';
 import { AppEvents, StockAlertsService } from '../../core/services/app-events.service';
 import { BarcodeScanner } from '../../core/services/barcode-scanner.service';
+import { BillingApi, GSTIN_RX, type SaleQuote } from '../../core/services/billing.api';
 import { CustomersApi, ProductsApi, SalesApi } from '../../core/services/data.services';
+import { billLabel } from '../../core/utils/bill';
 import { ToastService } from '../../core/services/toast.service';
 import { toPaise } from '../../core/utils/format';
 import { ConfirmService } from '../../shared/components/confirm-dialog/confirm-dialog';
@@ -47,12 +49,15 @@ interface CartLine {
   imports: [FormsModule, MatAutocompleteModule, TranslatePipe, InrPipe],
   templateUrl: './billing.html',
   styleUrl: './billing.scss',
+  // GST shops: B2B buyer box (kept here so billing.scss stays within its size budget).
+  styles: `.b2b { display: grid; gap: 8px; } .b2b .field.small input { flex: 1; min-width: 0; text-align: left; } .b2b .uppercase { text-transform: uppercase; } .b2b .invalid { border-color: #b91c1c; }`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Billing implements OnInit {
   private readonly productsApi = inject(ProductsApi);
   private readonly customersApi = inject(CustomersApi);
   private readonly salesApi = inject(SalesApi);
+  private readonly billingApi = inject(BillingApi);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
@@ -95,7 +100,29 @@ export class Billing implements OnInit {
   });
   protected readonly subtotal = computed(() => this.cart().reduce((s, l) => s + Math.round(l.qty * l.rate), 0));
   protected readonly discountPaise = computed(() => Math.min(toPaise(this.discount()), this.subtotal()));
-  protected readonly total = computed(() => this.subtotal() - this.discountPaise());
+  /** GST shop (not composition): tax is worked out by the server and shown before saving. */
+  protected readonly gstOn = computed(() => !!this.auth.user()?.billing?.gstEnabled && !this.auth.user()?.billing?.composition);
+  protected readonly showB2b = signal(false);
+  protected readonly buyerName = signal('');
+  protected readonly buyerGstin = signal('');
+  private readonly quoteBody = computed(() =>
+    this.gstOn() && this.cart().length
+      ? {
+          customerId: this.customer()?.id,
+          items: this.cart().map((l) => ({ productId: l.product.id, qty: l.qty, rate: l.rate })),
+          discount: this.discountPaise(),
+          ...this.buyerFields(),
+        }
+      : null,
+  );
+  private readonly quoteResult = signal<{ key: string; quote: SaleQuote } | null>(null);
+  /** The server's figures for exactly this cart (null while it is being worked out). */
+  protected readonly quote = computed(() => {
+    const body = this.quoteBody();
+    const r = this.quoteResult();
+    return body && r && r.key === JSON.stringify(body) ? r.quote : null;
+  });
+  protected readonly total = computed(() => this.quote()?.totalAmount ?? this.subtotal() - this.discountPaise());
   /** Quantity of each product already in the bill, for the badge on its tile. */
   protected readonly cartQty = computed(() => new Map(this.cart().map((l) => [l.product.id, l.qty])));
   private readonly tintByCategory = computed(() => new Map(this.categories().map((c, i) => [c, TINTS[i % TINTS.length]!])));
@@ -114,6 +141,28 @@ export class Billing implements OnInit {
       .filter((c) => !q || c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.aliases.some((a) => a.toLowerCase().includes(q)))
       .slice(0, 20);
   });
+
+  constructor() {
+    // Ask the server for the tax on this cart, a moment after the last change.
+    effect((onCleanup) => {
+      const body = this.quoteBody();
+      if (!body) return;
+      const key = JSON.stringify(body);
+      const timer = setTimeout(() => {
+        this.billingApi.quote(body).subscribe({ next: (quote) => this.quoteResult.set({ key, quote }), error: () => undefined });
+      }, 300);
+      onCleanup(() => clearTimeout(timer));
+    });
+  }
+
+  /** B2B details typed on the bill (a GSTIN not saved on the customer). */
+  private buyerFields(): { buyerName?: string; buyerGstin?: string } {
+    if (!this.showB2b()) return {};
+    const gstin = this.buyerGstin().trim().toUpperCase();
+    return { buyerName: this.buyerName().trim() || undefined, buyerGstin: GSTIN_RX.test(gstin) ? gstin : undefined };
+  }
+
+  protected readonly b2bInvalid = computed(() => this.showB2b() && !!this.buyerGstin().trim() && !GSTIN_RX.test(this.buyerGstin().trim().toUpperCase()));
 
   ngOnInit(): void {
     this.productsApi.list({ limit: 500, sort: 'name' }).subscribe({ next: (r) => this.products.set(r.items), error: (e) => this.toast.apiError(e) });
@@ -194,6 +243,9 @@ export class Billing implements OnInit {
     this.customer.set(null);
     this.customerQuery.set('');
     this.mode.set('cash');
+    this.showB2b.set(false);
+    this.buyerName.set('');
+    this.buyerGstin.set('');
   }
 
   protected pickCustomer(c: Customer | string): void {
@@ -224,6 +276,7 @@ export class Billing implements OnInit {
     if (!this.cart().length) return this.toast.error('billing.emptyCart');
     if (this.credit() > 0 && !this.customer()) return this.toast.error('billing.needCustomer');
     if (this.mode() === 'partial' && (toPaise(this.paid()) <= 0 || toPaise(this.paid()) >= this.total())) return this.toast.error('billing.partialInvalid');
+    if (this.b2bInvalid()) return this.toast.error('bill.gstinInvalid');
 
     this.saving.set(true);
     this.salesApi
@@ -234,10 +287,11 @@ export class Billing implements OnInit {
         paymentMode: this.mode(),
         paidAmount: this.mode() === 'partial' ? toPaise(this.paid()) : undefined,
         allowOversell,
+        ...this.buyerFields(),
       })
       .subscribe({
         next: (sale) => {
-          this.toast.success('billing.saved', { number: sale.billNumber });
+          this.toast.success('billing.saved', { number: billLabel(sale) });
           this.alerts.refresh();
           this.events.changed('sales');
           void this.router.navigate(['/sales', sale.id]);

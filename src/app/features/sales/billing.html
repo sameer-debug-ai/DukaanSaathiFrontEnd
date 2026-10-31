@@ -157,6 +157,26 @@
             </mat-option>
           </mat-autocomplete>
 
+          <!-- GST shops: bill to a business (their GSTIN; other state = IGST) -->
+          @if (gstOn()) {
+            @if (showB2b()) {
+              <div class="b2b">
+                <label class="field small">
+                  <span class="lbl">{{ 'bill.buyerName' | translate }}</span>
+                  <input [ngModel]="buyerName()" (ngModelChange)="buyerName.set($event)" maxlength="100" autocomplete="off" />
+                </label>
+                <label class="field small" [class.invalid]="b2bInvalid()">
+                  <span class="lbl">GSTIN</span>
+                  <input class="uppercase" [ngModel]="buyerGstin()" (ngModelChange)="buyerGstin.set($event)" maxlength="15" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="27ABCDE1234F1Z5" />
+                </label>
+              </div>
+            } @else {
+              <button type="button" class="add-discount" (click)="showB2b.set(true)">
+                <span class="material-symbols-outlined" aria-hidden="true">business</span>{{ 'bill.addB2b' | translate }}
+              </button>
+            }
+          }
+
           <!-- Payment mode -->
           <div class="modes" role="radiogroup" [attr.aria-label]="'billing.paymentMode' | translate">
             @for (m of modes; track m.value) {
@@ -193,13 +213,28 @@
           }
 
           <!-- Totals -->
-          @if (discountPaise() || credit()) {
+          @if (discountPaise() || credit() || quote()) {
           <dl class="sum">
             <dt>{{ 'billing.subtotal' | translate }}</dt>
             <dd>{{ subtotal() | inr }}</dd>
             @if (discountPaise()) {
               <dt>{{ 'billing.discount' | translate }}</dt>
               <dd class="ok">− {{ discountPaise() | inr }}</dd>
+            }
+            @if (quote(); as q) {
+              <dt>{{ 'bill.taxable' | translate }}</dt>
+              <dd>{{ q.taxableTotal ?? 0 | inr }}</dd>
+              @if (q.interState) {
+                <dt>IGST</dt>
+                <dd>{{ q.igst ?? 0 | inr }}</dd>
+              } @else {
+                <dt>CGST + SGST</dt>
+                <dd>{{ (q.cgst ?? 0) + (q.sgst ?? 0) | inr }}</dd>
+              }
+              @if (q.roundOff) {
+                <dt>{{ 'bill.roundOff' | translate }}</dt>
+                <dd>{{ q.roundOff | inr: true }}</dd>
+              }
             }
             @if (credit()) {
               <dt class="danger">{{ 'billing.toUdhaar' | translate }}</dt>

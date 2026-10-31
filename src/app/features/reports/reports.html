@@ -1,11 +1,12 @@
 <section class="ds-page">
   <app-page-header [title]="'nav.reports' | translate" [subtitle]="'reports.subtitle' | translate">
     <button mat-stroked-button (click)="exportCsv()" [disabled]="!report()"><span class="material-symbols-outlined">csv</span>CSV</button>
+    <button mat-stroked-button (click)="exportExcel()" [disabled]="!report()"><span class="material-symbols-outlined">table_view</span>Excel</button>
     <button mat-stroked-button (click)="exportPdf()" [disabled]="!report()"><span class="material-symbols-outlined">picture_as_pdf</span>PDF</button>
   </app-page-header>
 
   <div class="ds-chips mb-3" role="tablist">
-    @for (r of reports; track r.id) {
+    @for (r of reports(); track r.id) {
       <button class="ds-chip" role="tab" [attr.aria-selected]="active() === r.id" [class.active]="active() === r.id" (click)="select(r.id)">
         <span class="material-symbols-outlined align-middle text-[18px] mr-1">{{ r.icon }}</span>{{ r.key | translate }}
       </button>

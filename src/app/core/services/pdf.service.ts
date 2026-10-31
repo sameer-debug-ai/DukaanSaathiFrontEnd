@@ -1,8 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
-import type { CustomerLedger, Report, Sale } from '../models/domain.models';
+import type { BillParty, CustomerLedger, Report, Sale } from '../models/domain.models';
 import { formatIstDate } from '../../shared/pipes/ist-date.pipe';
+import { amountDue, billLabel, sellerOf } from '../utils/bill';
 import { formatQty, rsText } from '../utils/format';
+import { qrDataUrl, shopUpiLink } from '../utils/upi';
 
 type JsPdf = import('jspdf').jsPDF;
 
@@ -22,18 +24,20 @@ export class PdfService {
     return { doc: new jsPDF({ unit: 'pt', format: 'a4' }), autoTable: autoTable.default };
   }
 
-  private header(doc: JsPdf, title: string, subtitle?: string): number {
+  /** `party`: the seller as printed on a bill (defaults to the signed-in shop). */
+  private header(doc: JsPdf, title: string, subtitle?: string, party?: BillParty): number {
     const shop = this.auth.user();
+    const p = party ?? { name: shop?.shopName ?? 'DukaanSathi', address: shop?.shopAddress ?? '', phone: shop?.phone ?? '', gstin: shop?.gstNumber ?? '', stateCode: '' };
     const w = doc.internal.pageSize.getWidth();
     doc.setFillColor(...BRAND);
     doc.rect(0, 0, w, 70, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
-    doc.text(shop?.shopName ?? 'DukaanSathi', 40, 32);
+    doc.text(p.name || 'DukaanSathi', 40, 32);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text([shop?.shopAddress, shop?.phone ? `Ph: ${shop.phone}` : '', shop?.gstNumber ? `GSTIN: ${shop.gstNumber}` : ''].filter(Boolean).join('  |  '), 40, 52);
+    doc.text([p.address, p.phone ? `Ph: ${p.phone}` : '', p.gstin ? `GSTIN: ${p.gstin}` : ''].filter(Boolean).join('  |  '), 40, 52);
     doc.setTextColor(20, 20, 20);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
@@ -119,34 +123,111 @@ export class PdfService {
     return new File([doc.output('blob')], name, { type: 'application/pdf' });
   }
 
+  /** The bill as an A4 PDF: same content as the printed bill (GST table, words, UPI QR). */
   async bill(sale: Sale): Promise<File> {
     const { doc, autoTable } = await this.create();
-    const customer = sale.customer?.name || sale.customerName || 'Walk-in customer';
-    const y = this.header(doc, `Bill #${sale.billNumber}`, `${formatIstDate(sale.date, true)}  |  ${customer}${sale.customer?.phone ? ` (${sale.customer.phone})` : ''}`);
+    const user = this.auth.user();
+    const seller = sellerOf(sale, this.auth);
+    const label = billLabel(sale);
+    const gst = sale.docType === 'tax_invoice';
+    const title = `${sale.docType === 'tax_invoice' ? 'Tax Invoice' : sale.docType === 'bill_of_supply' ? 'Bill of Supply' : 'Bill'} ${label}${sale.status === 'cancelled' ? '  (CANCELLED)' : ''}`;
+    const buyer = sale.buyer?.name ? sale.buyer : null;
+    const customer = buyer?.name || sale.customer?.name || sale.customerName || 'Walk-in customer';
+    const phone = buyer?.phone || sale.customer?.phone;
+    const buyerGstin = buyer?.gstin || sale.customer?.gstin;
+    const y = this.header(doc, title, `${formatIstDate(sale.date, true)}  |  ${customer}${phone ? ` (${phone})` : ''}${buyerGstin ? `  |  GSTIN: ${buyerGstin}` : ''}`, seller);
+
+    const head = gst ? [['#', 'Item', 'HSN', 'Qty', 'Rate', 'Taxable', 'GST', 'Amount']] : [['#', 'Item', 'Qty', 'Rate', 'Amount']];
+    const body = sale.items.map((i, n) =>
+      gst
+        ? [String(n + 1), i.name, i.hsnCode ?? '', formatQty(i.qty, i.unit), rsText(i.rate), rsText(i.taxable ?? 0), `${i.gstRate ?? 0}%`, rsText(i.total)]
+        : [String(n + 1), i.name, formatQty(i.qty, i.unit), rsText(i.rate), rsText(i.total)],
+    );
+    const pad = gst ? ['', '', '', '', '', ''] : ['', '', ''];
+    const foot = [
+      [...pad, 'Subtotal', rsText(sale.subtotal)],
+      ...(sale.discount ? [[...pad, 'Discount', `- ${rsText(sale.discount)}`]] : []),
+      ...(gst
+        ? [
+            [...pad, 'Taxable value', rsText(sale.taxableTotal ?? 0)],
+            ...(sale.interState ? [[...pad, 'IGST', rsText(sale.igst ?? 0)]] : [[...pad, 'CGST', rsText(sale.cgst ?? 0)], [...pad, 'SGST', rsText(sale.sgst ?? 0)]]),
+            ...(sale.roundOff ? [[...pad, 'Round off', rsText(sale.roundOff)]] : []),
+          ]
+        : []),
+      [...pad, 'Total', rsText(sale.totalAmount)],
+      [...pad, `Paid (${sale.paymentMode})`, rsText(sale.paidAmount)],
+      ...(sale.creditAmount ? [[...pad, 'Udhaar', rsText(sale.creditAmount)]] : []),
+    ];
+    const last = head[0]!.length - 1;
+    const firstNum = gst ? 3 : 2;
     autoTable(doc, {
       startY: y,
-      head: [['#', 'Item', 'Qty', 'Rate', 'Amount']],
-      body: sale.items.map((i, n) => [String(n + 1), i.name, formatQty(i.qty, i.unit), rsText(i.rate), rsText(i.total)]),
-      styles: { fontSize: 10, cellPadding: 6 },
+      head,
+      body,
+      foot,
+      styles: { fontSize: gst ? 9 : 10, cellPadding: gst ? 5 : 6 },
       headStyles: { fillColor: BRAND },
-      columnStyles: { 0: { cellWidth: 26 }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } },
-      foot: [
-        ['', '', '', 'Subtotal', rsText(sale.subtotal)],
-        ...(sale.discount ? [['', '', '', 'Discount', `- ${rsText(sale.discount)}`]] : []),
-        ['', '', '', 'Total', rsText(sale.totalAmount)],
-        ['', '', '', 'Paid', rsText(sale.paidAmount)],
-        ...(sale.creditAmount ? [['', '', '', 'Udhaar', rsText(sale.creditAmount)]] : []),
-      ],
+      columnStyles: Object.fromEntries(head[0]!.map((_, c) => [c, c === 0 ? { cellWidth: 24 } : c >= firstNum ? { halign: 'right' as const } : {}])),
       footStyles: { fillColor: [245, 247, 250], textColor: 20, halign: 'right', fontStyle: 'bold' },
+      didParseCell: (d) => {
+        if (d.section === 'foot' && d.column.index < last - 1) d.cell.styles.fillColor = [255, 255, 255];
+      },
     });
-    const endY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 26;
+    let endY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 20;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    if (sale.amountInWords) {
+      doc.text(sale.amountInWords.en, 40, endY);
+      endY += 16;
+    }
+    if (gst && sale.taxSummary?.length) {
+      autoTable(doc, {
+        startY: endY,
+        head: [sale.interState ? ['GST %', 'Taxable', 'IGST'] : ['GST %', 'Taxable', 'CGST', 'SGST']],
+        body: sale.taxSummary.map((t) => (sale.interState ? [`${t.rate}%`, rsText(t.taxable), rsText(t.igst)] : [`${t.rate}%`, rsText(t.taxable), rsText(t.cgst), rsText(t.sgst)])),
+        styles: { fontSize: 9, cellPadding: 4, halign: 'right' },
+        headStyles: { fillColor: BRAND },
+        tableWidth: 300,
+        margin: { left: 40 },
+      });
+      endY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
+    }
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(90, 90, 90);
+    if (sale.docType === 'bill_of_supply') {
+      doc.text('Composition taxable person, not eligible to collect tax on supplies.', 40, endY);
+      endY += 14;
+    }
+    if (sale.status === 'cancelled') {
+      doc.setTextColor(185, 28, 28);
+      doc.text(`Cancelled${sale.cancelReason ? `: ${sale.cancelReason}` : ''}`, 40, endY);
+      doc.setTextColor(90, 90, 90);
+      endY += 14;
+    }
+    const due = amountDue(sale);
+    const link = due > 0 && user?.billing?.showUpiQr !== false ? shopUpiLink(user?.settings, seller.name, due, label) : null;
+    if (link) {
+      const h = doc.internal.pageSize.getHeight();
+      if (endY + 110 > h - 40) {
+        doc.addPage();
+        endY = 50;
+      }
+      doc.addImage(await qrDataUrl(link), 'PNG', 40, endY, 90, 90);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(30, 30, 30);
+      doc.text(`Scan to pay ${rsText(due)} (UPI)`, 140, endY + 20);
+      doc.setFont('helvetica', 'normal');
+      doc.textWithLink('Tap here to pay', 140, endY + 36, { url: link });
+      endY += 100;
+    }
     doc.setFontSize(10);
     doc.setTextColor(90, 90, 90);
-    doc.text(`Payment: ${sale.paymentMode.toUpperCase()}`, 40, endY);
-    doc.text('Thank you! Visit again.', 40, endY + 16);
+    doc.text(user?.billing?.footerNote || 'Thank you! Visit again.', 40, endY + 10);
     this.footer(doc);
-    return new File([doc.output('blob')], `bill-${sale.billNumber}.pdf`, { type: 'application/pdf' });
+    return new File([doc.output('blob')], `bill-${label.replace(/[^\w-]+/g, '-')}.pdf`, { type: 'application/pdf' });
   }
 
   async report(report: Report): Promise<File> {

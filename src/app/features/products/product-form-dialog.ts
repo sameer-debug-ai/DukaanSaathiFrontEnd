@@ -11,6 +11,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth/auth.service';
 import { UNITS, type Product } from '../../core/models/domain.models';
 import { BarcodeScanner } from '../../core/services/barcode-scanner.service';
+import { GST_RATES } from '../../core/services/billing.api';
 import { CategoriesApi } from '../../core/services/categories.api';
 import { ProductsApi, type ProductInput } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
@@ -105,6 +106,33 @@ export interface ProductFormData {
             }
           </section>
 
+          @if (gstOn) {
+            <section class="fd-section">
+              <h3><span class="material-symbols-outlined">receipt_long</span>GST</h3>
+              <div class="fd-grid">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>{{ 'products.gstRate' | translate }}</mat-label>
+                  <input matInput type="number" inputmode="decimal" formControlName="gstRate" min="0" max="100" />
+                  <span matTextSuffix>%</span>
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>{{ 'products.hsn' | translate }}</mat-label>
+                  <input matInput formControlName="hsnCode" inputmode="numeric" maxlength="8" placeholder="1006" />
+                  <mat-error>{{ 'products.hsnInvalid' | translate }}</mat-error>
+                </mat-form-field>
+                <div class="span-all gst-rates" role="group" [attr.aria-label]="'products.gstRate' | translate">
+                  @for (r of gstRates; track r) {
+                    <button type="button" class="ds-chip" [class.active]="form.controls.gstRate.value === r" (click)="form.controls.gstRate.setValue(r)">{{ r }}%</button>
+                  }
+                </div>
+                <div class="span-all track">
+                  <mat-slide-toggle formControlName="priceIncludesGst">{{ 'products.priceIncludesGst' | translate }}</mat-slide-toggle>
+                  <p>{{ 'products.priceIncludesGstHint' | translate }}</p>
+                </div>
+              </div>
+            </section>
+          }
+
           <section class="fd-section">
             <h3><span class="material-symbols-outlined">inventory_2</span>{{ 'products.sectionStock' | translate }}</h3>
             <div class="fd-grid">
@@ -157,6 +185,7 @@ export interface ProductFormData {
   styles: `
     .track { display: flex; flex-direction: column; gap: 2px; }
     .track p { margin: 0 0 0 52px; font-size: 0.82rem; color: var(--ds-muted); }
+    .gst-rates { display: flex; flex-wrap: wrap; gap: 6px; }
   `,
 })
 export class ProductFormDialog {
@@ -192,7 +221,14 @@ export class ProductFormDialog {
     openingStock: [0, [Validators.min(0)]],
     barcode: [this.data.product?.barcode ?? this.data.barcode ?? ''],
     trackExpiry: [this.data.product?.trackExpiry ?? false],
+    gstRate: [this.data.product?.gstRate ?? 0, [Validators.min(0), Validators.max(100)]],
+    hsnCode: [this.data.product?.hsnCode ?? '', [Validators.pattern(/^(\d{4}|\d{6}|\d{8})?$/)]],
+    priceIncludesGst: [this.data.product?.priceIncludesGst ?? true],
   });
+
+  /** GST fields only for shops that bill with GST (not composition). */
+  protected readonly gstOn = !!this.auth.user()?.billing?.gstEnabled && !this.auth.user()?.billing?.composition;
+  protected readonly gstRates = GST_RATES;
 
   /** Live margin under the prices: percent of the selling price, and rupees per unit. */
   protected margin(): { pct: number; profit: string } | null {
@@ -228,6 +264,8 @@ export class ProductFormDialog {
       mrp: toPaise(v.mrp),
       barcode: v.barcode.trim() || undefined,
       trackExpiry: v.trackExpiry,
+      // Sent only when the GST fields are shown, so other shops' products stay as they were.
+      ...(this.gstOn ? { gstRate: Number(v.gstRate) || 0, hsnCode: v.hsnCode.trim(), priceIncludesGst: v.priceIncludesGst } : {}),
     };
     this.saving.set(true);
     const req = this.data.product

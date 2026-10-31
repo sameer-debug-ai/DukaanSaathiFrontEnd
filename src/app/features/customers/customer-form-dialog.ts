@@ -6,6 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { TranslatePipe } from '@ngx-translate/core';
+import { AuthService } from '../../core/auth/auth.service';
 import type { Customer } from '../../core/models/domain.models';
 import { CustomersApi } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
@@ -68,6 +69,15 @@ export interface CustomerFormData {
                 <mat-label>{{ 'common.address' | translate }}</mat-label>
                 <textarea matInput formControlName="address" rows="2"></textarea>
               </mat-form-field>
+              @if (gstOn) {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="span-all">
+                  <mat-label>{{ 'customers.gstin' | translate }}</mat-label>
+                  <span matPrefix class="material-symbols-outlined fd-field-icon">business</span>
+                  <input matInput formControlName="gstin" maxlength="15" autocomplete="off" spellcheck="false" style="text-transform: uppercase" placeholder="27ABCDE1234F1Z5" />
+                  <mat-hint>{{ 'customers.gstinHint' | translate }}</mat-hint>
+                  <mat-error>{{ 'bill.gstinInvalid' | translate }}</mat-error>
+                </mat-form-field>
+              }
             </div>
           </section>
 
@@ -123,7 +133,10 @@ export class CustomerFormDialog {
     creditLimit: [this.data.customer?.creditLimit ? toRupees(this.data.customer.creditLimit) : (null as unknown as number)],
     reminderEveryDays: [(this.data.customer?.reminderEveryDays ?? 0) as 0 | 7 | 15 | 30],
     dueDate: [this.data.customer?.dueDate ? istDay(new Date(this.data.customer.dueDate)) : ''],
+    gstin: [this.data.customer?.gstin ?? '', [Validators.pattern(/^\s*(\d{2}[A-Za-z]{5}\d{4}[A-Za-z][1-9A-Za-z][Zz][0-9A-Za-z])?\s*$/)]],
   });
+  /** B2B customers (their GSTIN goes on the bill) only matter to GST shops. */
+  protected readonly gstOn = !!inject(AuthService).user()?.billing?.gstEnabled;
   protected readonly reminderChoices = [0, 7, 15, 30] as const;
 
   protected save(): void {
@@ -141,6 +154,7 @@ export class CustomerFormDialog {
       reminderEveryDays: v.reminderEveryDays,
       // Clearing the date on edit removes it; a new customer just has none.
       dueDate: v.dueDate ? v.dueDate : this.data.customer?.dueDate ? null : undefined,
+      ...(this.gstOn ? { gstin: v.gstin.trim().toUpperCase(), stateCode: v.gstin.trim().slice(0, 2) } : {}),
     };
     this.saving.set(true);
     const req = this.data.customer ? this.api.update(this.data.customer.id, body) : this.api.create(body);
