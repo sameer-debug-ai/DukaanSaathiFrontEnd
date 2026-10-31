@@ -39,6 +39,7 @@ export const routes: Routes = [
           { path: '', loadComponent: () => import('./features/products/products-list').then((m) => m.ProductsList) },
           { path: 'alerts', loadComponent: () => import('./features/products/stock-alerts').then((m) => m.StockAlertsPage), title: 'Low stock · DukaanSathi' },
           { path: 'reorder', loadComponent: () => import('./features/products/reorder-list').then((m) => m.ReorderListPage), title: 'Order list · DukaanSathi' },
+          { path: 'categories', loadComponent: () => import('./features/products/categories-page').then((m) => m.CategoriesPage), title: 'Categories · DukaanSathi' },
           { path: ':id', loadComponent: () => import('./features/products/product-detail').then((m) => m.ProductDetail) },
         ],
       },

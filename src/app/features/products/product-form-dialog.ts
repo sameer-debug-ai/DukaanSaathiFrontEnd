@@ -11,6 +11,7 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { AuthService } from '../../core/auth/auth.service';
 import { UNITS, type Product } from '../../core/models/domain.models';
 import { BarcodeScanner } from '../../core/services/barcode-scanner.service';
+import { CategoriesApi } from '../../core/services/categories.api';
 import { ProductsApi, type ProductInput } from '../../core/services/data.services';
 import { ToastService } from '../../core/services/toast.service';
 import { toPaise, toRupees } from '../../core/utils/format';
@@ -62,7 +63,7 @@ export interface ProductFormData {
                 <mat-label>{{ 'products.category' | translate }}</mat-label>
                 <input matInput formControlName="category" [matAutocomplete]="cats" />
                 <mat-autocomplete #cats="matAutocomplete">
-                  @for (c of data.categories; track c) {
+                  @for (c of categoryOptions(); track c) {
                     <mat-option [value]="c">{{ c }}</mat-option>
                   }
                 </mat-autocomplete>
@@ -168,6 +169,15 @@ export class ProductFormDialog {
 
   protected readonly units = UNITS;
   protected readonly saving = signal(false);
+  /** Dropdown choices: the shop's active categories (managed on Products -> Categories). */
+  protected readonly categoryOptions = signal<string[]>(this.data.categories ?? []);
+
+  constructor() {
+    // Typing a new name still works; inactive categories are just not offered.
+    inject(CategoriesApi)
+      .active()
+      .subscribe({ next: (names) => this.categoryOptions.set(names), error: () => undefined });
+  }
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     name: [this.data.product?.name ?? this.data.name ?? '', [Validators.required, Validators.maxLength(120)]],

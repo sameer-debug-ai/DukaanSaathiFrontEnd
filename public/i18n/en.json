@@ -56,7 +56,8 @@
     "expand": "Expand menu",
     "notifications": "Stock alerts",
     "account": "Account",
-    "reorder": "Order list"
+    "reorder": "Order list",
+    "categories": "Categories"
   },
   "auth": {
     "loginSub": "Welcome back! Login to manage your shop.",
@@ -942,5 +943,29 @@
     "fefoHint": "Sold earliest expiry first",
     "noBatches": "No stock in batches. Add expiry dates when you record a purchase.",
     "date": "Expiry date"
+  },
+  "categories": {
+    "title": "Categories",
+    "subtitle": "Add product categories and choose which ones appear when adding a product",
+    "addPlaceholder": "New category, e.g. Personal Care",
+    "add": "Add",
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "products": "{{count}} products",
+    "hidden": "Hidden from the product form",
+    "rename": "Rename",
+    "activate": "Show {{name}} in the product form",
+    "deactivate": "Hide {{name}} from the product form",
+    "added": "Category \"{{name}}\" added",
+    "renamed": "Renamed to \"{{name}}\"",
+    "activated": "\"{{name}}\" is active",
+    "deactivated": "\"{{name}}\" is now hidden",
+    "empty": "No categories yet",
+    "emptyHint": "Add one above, or they appear here when you add products with a category.",
+    "note": "Inactive categories are not shown in the \"Add product\" dropdown. Their products stay as they are. Renaming moves its products to the new name.",
+    "typeName": "Type the category name first"
   }
 }

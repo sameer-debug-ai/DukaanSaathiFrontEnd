@@ -9,6 +9,7 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/dashboard', labelKey: 'nav.dashboard', icon: 'space_dashboard' },
   { path: '/sales/new', labelKey: 'nav.sales', icon: 'point_of_sale' },
   { path: '/products', labelKey: 'nav.products', icon: 'inventory_2' },
+  { path: '/products/categories', labelKey: 'nav.categories', icon: 'category' },
   { path: '/customers', labelKey: 'nav.udhaar', icon: 'menu_book' },
   { path: '/suppliers', labelKey: 'nav.suppliers', icon: 'local_shipping' },
   { path: '/purchases', labelKey: 'nav.purchases', icon: 'shopping_cart' },
