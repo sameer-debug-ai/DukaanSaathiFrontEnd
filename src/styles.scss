@@ -17,6 +17,75 @@
   --ds-line: #e2e6ec;
   --ds-header-h: 60px;
   --ds-bottom-nav-h: 64px;
+
+  /* Brand scale, derived from the existing blue (#1e5fa8 = 600). */
+  --ds-brand-50: #f0f6fd;
+  --ds-brand-100: #e3eefb;
+  --ds-brand-200: #c5dbf4;
+  --ds-brand-300: #96bce8;
+  --ds-brand-400: #5c96d8;
+  --ds-brand-500: #2f76c3;
+  --ds-brand-600: #1e5fa8;
+  --ds-brand-700: #1a4f8c;
+  --ds-brand-800: #173f6f;
+  --ds-brand-900: #132f51;
+  --ds-brand-hover: var(--ds-brand-700);
+  --ds-info: var(--ds-brand);
+  --ds-info-soft: var(--ds-brand-soft);
+  /* Neutrals */
+  --ds-text-strong: #0f1419;
+  --ds-subtle: #8a94a3;
+  --ds-line-strong: #cfd6df;
+  --ds-hover: #eef1f5;
+
+  /* Type scale (rem; body is 16px) */
+  --ds-text-xs: 0.75rem;
+  --ds-text-sm: 0.875rem;
+  --ds-text-base: 1rem;
+  --ds-text-lg: 1.125rem;
+  --ds-text-xl: 1.25rem;
+  --ds-text-2xl: 1.5rem;
+  --ds-text-3xl: 1.875rem;
+
+  /* Spacing: 4px base */
+  --ds-space-1: 4px;
+  --ds-space-2: 8px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-5: 20px;
+  --ds-space-6: 24px;
+  --ds-space-8: 32px;
+  --ds-space-10: 40px;
+
+  /* Radius */
+  --ds-radius-sm: 8px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 14px;
+  --ds-radius-xl: 18px;
+  --ds-radius-pill: 999px;
+
+  /* Shadows (soft, low contrast; cards mostly rely on borders) */
+  --ds-shadow-xs: 0 1px 2px rgb(16 24 40 / 0.05);
+  --ds-shadow-sm: 0 1px 3px rgb(16 24 40 / 0.08), 0 1px 2px rgb(16 24 40 / 0.04);
+  --ds-shadow-md: 0 6px 16px rgb(16 24 40 / 0.1);
+  --ds-shadow-lg: 0 12px 32px rgb(16 24 40 / 0.16);
+
+  /* Layers */
+  --ds-z-header: 20;
+  --ds-z-bottom-nav: 30;
+  --ds-z-fab: 40;
+
+  /* Motion */
+  --ds-ease: cubic-bezier(0.2, 0, 0, 1);
+  --ds-dur-fast: 120ms;
+  --ds-dur: 200ms;
+
+  /* Touch + floating mic: room every page leaves at the bottom so nothing hides under the FAB. */
+  --ds-tap: 44px;
+  --ds-fab-size: 64px;
+  --ds-fab-gap: 24px;
+  --ds-fab-clearance: calc(var(--ds-fab-size) + var(--ds-fab-gap) + 16px);
+  --ds-focus-ring: 0 0 0 3px color-mix(in srgb, var(--ds-brand) 35%, transparent);
 }
 
 html.dark {
@@ -33,6 +102,26 @@ html.dark {
   --ds-text: #e7eaee;
   --ds-muted: #9aa5b3;
   --ds-line: #2c323a;
+
+  --ds-brand-50: #142133;
+  --ds-brand-100: #1b2b40;
+  --ds-brand-200: #23395a;
+  --ds-brand-300: #345580;
+  --ds-brand-400: #5480b8;
+  --ds-brand-500: #6f9ed8;
+  --ds-brand-600: #8ab8ee;
+  --ds-brand-700: #a9cbf3;
+  --ds-brand-800: #c8ddf7;
+  --ds-brand-900: #e3eefb;
+  --ds-brand-hover: var(--ds-brand-700);
+  --ds-text-strong: #f4f6f8;
+  --ds-subtle: #7b8696;
+  --ds-line-strong: #3a424c;
+  --ds-hover: #232931;
+  --ds-shadow-xs: 0 1px 2px rgb(0 0 0 / 0.3);
+  --ds-shadow-sm: 0 1px 3px rgb(0 0 0 / 0.35);
+  --ds-shadow-md: 0 6px 16px rgb(0 0 0 / 0.4);
+  --ds-shadow-lg: 0 12px 32px rgb(0 0 0 / 0.5);
 }
 
 /* ---------- Angular Material (M3) ---------- */
@@ -57,6 +146,24 @@ html.dark {
   color-scheme: dark;
 }
 
+/* One button shape and height everywhere (Material reads these tokens). */
+html {
+  --mat-button-filled-container-shape: var(--ds-radius-md);
+  --mat-button-outlined-container-shape: var(--ds-radius-md);
+  --mat-button-protected-container-shape: var(--ds-radius-md);
+  --mat-button-tonal-container-shape: var(--ds-radius-md);
+  --mat-button-text-container-shape: var(--ds-radius-md);
+  --mat-button-filled-container-height: var(--ds-tap);
+  --mat-button-outlined-container-height: var(--ds-tap);
+  --mat-button-protected-container-height: var(--ds-tap);
+  --mat-button-tonal-container-height: var(--ds-tap);
+  --mat-button-text-container-height: var(--ds-tap);
+  --mat-button-filled-horizontal-padding: 20px;
+  --mat-button-outlined-horizontal-padding: 18px;
+  --mat-icon-button-state-layer-size: var(--ds-tap);
+  --mat-icon-button-container-shape: var(--ds-radius-pill);
+}
+
 /* ---------- Base ---------- */
 html,
 body {
@@ -69,7 +176,17 @@ body {
   color: var(--ds-text);
   font-family: 'Noto Sans', 'Noto Sans Devanagari', system-ui, sans-serif;
   font-size: 16px;
+  line-height: 1.5;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  /* Money and quantities line up in columns everywhere. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Keyboard focus: one clear ring on every control (mouse/touch clicks don't show it). */
+:where(button, a, [role='button'], [role='tab'], [role='radio'], summary, .ds-chip):focus-visible {
+  outline: 2px solid var(--ds-brand);
+  outline-offset: 2px;
 }
 
 /* Every interactive control meets the 44px touch target. */
@@ -94,14 +211,20 @@ a,
 .ds-card {
   background: var(--ds-card);
   border: 1px solid var(--ds-line);
-  border-radius: 14px;
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-xs);
 }
 
 .ds-page {
-  padding: 16px;
+  padding: var(--ds-space-4);
   max-width: 1200px;
   margin: 0 auto;
   min-width: 0;
+}
+@media (min-width: 768px) {
+  .ds-page {
+    padding: var(--ds-space-6);
+  }
 }
 
 /* Grid/flex children default to min-content width; let cards shrink to the phone width. */
@@ -288,19 +411,36 @@ a,
 }
 .ds-chip {
   flex-shrink: 0;
-  min-height: 38px;
-  padding: 0 14px;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--ds-tap);
+  padding: 0 16px;
+  border-radius: var(--ds-radius-pill);
   border: 1px solid var(--ds-line);
   background: var(--ds-card);
   color: var(--ds-text);
   font: inherit;
-  font-size: 0.9rem;
+  font-size: var(--ds-text-sm);
+  font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
+  transition:
+    background-color var(--ds-dur-fast) var(--ds-ease),
+    border-color var(--ds-dur-fast) var(--ds-ease),
+    color var(--ds-dur-fast) var(--ds-ease);
+  &:hover {
+    border-color: var(--ds-line-strong);
+    background: var(--ds-hover);
+  }
   &.active {
     background: var(--ds-brand);
     border-color: var(--ds-brand);
     color: #fff;
+  }
+  .material-symbols-outlined {
+    font-size: 18px;
   }
 }
 
@@ -317,11 +457,20 @@ a,
     font-weight: 600;
   }
   a {
+    display: inline-flex;
+    align-items: center;
+    /* 44px tall to tap, without making the header row taller */
+    min-height: var(--ds-tap);
+    margin: -10px -8px;
+    padding: 0 8px;
+    border-radius: var(--ds-radius-sm);
     color: var(--ds-brand);
-    font-size: 0.9rem;
+    font-size: var(--ds-text-sm);
     text-decoration: none;
-    font-weight: 500;
-    min-height: auto;
+    font-weight: 600;
+    &:hover {
+      background: var(--ds-brand-50);
+    }
   }
 }
 
@@ -574,6 +723,7 @@ a,
   }
   .ds-card {
     border: 0 !important;
+    box-shadow: none !important;
   }
   .ds-page {
     padding: 0 !important;
@@ -584,6 +734,15 @@ a,
 @media (prefers-reduced-motion: reduce) {
   .ds-skeleton {
     animation: none;
+  }
+  /* Mic pulse, sheets, hovers: no movement for people who asked the system for less. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

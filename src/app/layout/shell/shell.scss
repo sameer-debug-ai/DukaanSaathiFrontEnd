@@ -15,8 +15,12 @@
   flex-direction: column;
   background: var(--ds-card);
   border-right: 1px solid var(--ds-line);
-  transition: width 0.2s ease;
+  transition: width var(--ds-dur) var(--ds-ease);
+  /* Short laptop screens: the menu scrolls instead of cutting off the last items. */
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ds-line-strong) transparent;
 }
 .collapsed .sidebar {
   width: 72px;
@@ -47,27 +51,53 @@
 }
 
 .side-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 0 14px;
-  height: 48px;
-  border-radius: 12px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: var(--ds-radius-md);
   color: var(--ds-text);
   text-decoration: none;
   font-weight: 500;
+  font-size: 0.95rem;
   white-space: nowrap;
+  transition:
+    background-color var(--ds-dur-fast) var(--ds-ease),
+    color var(--ds-dur-fast) var(--ds-ease);
 
+  .material-symbols-outlined {
+    color: var(--ds-muted);
+    transition: color var(--ds-dur-fast) var(--ds-ease);
+  }
   &:hover {
-    background: var(--ds-surface);
+    background: var(--ds-hover);
   }
   &.active {
     background: var(--ds-brand-soft);
     color: var(--ds-brand);
+    font-weight: 600;
     .material-symbols-outlined {
+      color: var(--ds-brand);
       font-variation-settings: 'FILL' 1;
     }
+    /* small bar on the left edge, so the current page is clear even at a glance */
+    &::before {
+      content: '';
+      position: absolute;
+      left: -10px;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: var(--ds-brand);
+    }
   }
+}
+.collapsed .side-link.active::before {
+  display: none;
 }
 
 /* ---------- Main column ---------- */
@@ -123,6 +153,8 @@
 
 .content {
   flex: 1;
+  /* Room for the floating mic button: the last row of every page stays visible above it. */
+  padding-bottom: var(--ds-fab-clearance);
 }
 
 .bell {
@@ -145,8 +177,8 @@
   box-sizing: border-box;
 }
 .mobile .content {
-  /* room for bottom nav + mic FAB */
-  padding-bottom: calc(var(--ds-bottom-nav-h) + 24px + env(safe-area-inset-bottom));
+  /* bottom nav + the mic FAB that floats above it + iOS home bar */
+  padding-bottom: calc(var(--ds-bottom-nav-h) + 14px + var(--ds-fab-size) + 16px + env(safe-area-inset-bottom));
 }
 
 /* ---------- Bottom nav (mobile) ---------- */
@@ -172,16 +204,21 @@
   gap: 2px;
   color: var(--ds-muted);
   text-decoration: none;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 500;
+  min-width: 0;
 
+  .material-symbols-outlined {
+    padding: 3px 18px;
+    border-radius: var(--ds-radius-pill);
+    transition: background-color var(--ds-dur) var(--ds-ease);
+  }
   &.active {
     color: var(--ds-brand);
+    font-weight: 700;
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 1;
       background: var(--ds-brand-soft);
-      border-radius: 14px;
-      padding: 2px 16px;
     }
   }
 }

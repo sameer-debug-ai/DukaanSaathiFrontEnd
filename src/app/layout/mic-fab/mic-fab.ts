@@ -16,10 +16,10 @@ import { VoiceUi } from '../../features/voice/voice-ui.service';
     .mic-fab {
       position: fixed;
       right: 20px;
-      bottom: 24px;
-      z-index: 40;
-      width: 64px;
-      height: 64px;
+      bottom: var(--ds-fab-gap);
+      z-index: var(--ds-z-fab);
+      width: var(--ds-fab-size);
+      height: var(--ds-fab-size);
       border-radius: 50%;
       border: 0;
       cursor: pointer;
@@ -27,8 +27,8 @@ import { VoiceUi } from '../../features/voice/voice-ui.service';
       place-items: center;
       color: #fff;
       background: var(--ds-danger);
-      box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
-      transition: transform 0.15s ease;
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--ds-danger) 35%, transparent), var(--ds-shadow-md);
+      transition: transform var(--ds-dur-fast) var(--ds-ease);
     }
     .mic-fab:hover { transform: scale(1.05); }
     .mic-fab:active { transform: scale(0.94); }
