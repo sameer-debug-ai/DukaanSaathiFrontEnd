@@ -683,6 +683,14 @@ a,
   --mat-button-outlined-state-layer-color: var(--ds-danger);
 }
 
+/* Inline text link with a 44px tap area that doesn't make its row taller. */
+.ds-tap-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ds-tap);
+  margin-block: -12px;
+}
+
 .text-ok {
   color: var(--ds-ok);
 }

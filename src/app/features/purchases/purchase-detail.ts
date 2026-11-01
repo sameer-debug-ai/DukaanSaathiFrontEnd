@@ -40,7 +40,7 @@ import { IstDatePipe } from '../../shared/pipes/ist-date.pipe';
                 <tbody>
                   @for (i of p.items; track $index) {
                     <tr>
-                      <td><a [routerLink]="['/products', i.productId]">{{ i.name }}</a></td>
+                      <td><a class="ds-tap-link" [routerLink]="['/products', i.productId]">{{ i.name }}</a></td>
                       <td class="num">{{ i.qty }} {{ i.unit }} × {{ i.rate | inr }}</td>
                       <td class="num font-semibold">{{ i.total | inr }}</td>
                     </tr>

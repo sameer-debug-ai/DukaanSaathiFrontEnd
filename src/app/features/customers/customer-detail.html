@@ -111,7 +111,7 @@
                     <span class="ds-badge muted ml-1">{{ ('ledger.source.' + e.source) | translate }}</span>
                   }
                   @if (e.saleId) {
-                    <a class="ml-1 text-brand text-sm" [routerLink]="['/sales', e.saleId]">{{ 'ledger.viewBill' | translate }}</a>
+                    <a class="ml-1 text-brand text-sm ds-tap-link" [routerLink]="['/sales', e.saleId]">{{ 'ledger.viewBill' | translate }}</a>
                   }
                 </td>
                 <td class="num amount-credit">{{ e.credit ? (e.credit | inr) : '' }}</td>

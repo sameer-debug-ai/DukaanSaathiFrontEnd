@@ -39,7 +39,7 @@
   color: var(--ds-brand);
   text-decoration: none;
   margin-right: 8px;
-  min-height: 32px;
+  min-height: 44px;
   .material-symbols-outlined {
     font-size: 18px;
   }
@@ -50,6 +50,10 @@
   gap: 10px;
   width: 100%;
   max-width: 460px;
+  // An odd last button (e.g. UPI QR) takes the whole row instead of sitting alone on the left.
+  > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
 }
 @media (max-width: 599.98px) {
   .actions {
