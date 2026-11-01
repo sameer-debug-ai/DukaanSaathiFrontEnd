@@ -245,6 +245,14 @@ a,
 .mat-mdc-form-field {
   width: 100%;
 }
+/* Icon buttons inside fields (show password, scan barcode): 44px like every other button. */
+.mat-mdc-form-field-icon-suffix .mat-mdc-icon-button,
+.mat-mdc-form-field-icon-prefix .mat-mdc-icon-button {
+  --mat-icon-button-state-layer-size: var(--ds-tap);
+  width: var(--ds-tap);
+  height: var(--ds-tap);
+  padding: 10px;
+}
 
 /* Snackbar variants used by ToastService. */
 .ds-toast-success {

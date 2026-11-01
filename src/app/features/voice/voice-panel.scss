@@ -19,7 +19,7 @@
   }
 }
 .lang {
-  min-height: 36px;
+  min-height: var(--ds-tap);
   padding: 0 12px;
   border-radius: 999px;
   border: 1px solid var(--ds-line);
@@ -196,10 +196,14 @@
   gap: 8px;
   .ds-chip {
     height: auto;
-    min-height: 38px;
-    padding: 6px 12px;
+    min-height: var(--ds-tap);
+    padding: 8px 14px;
     text-align: left;
     flex-shrink: 1;
+    /* Long example sentences wrap inside the chip (chips are nowrap elsewhere). */
+    white-space: normal;
+    line-height: 1.35;
+    justify-content: flex-start;
   }
 }
 .engine {

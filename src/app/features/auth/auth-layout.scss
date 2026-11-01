@@ -265,8 +265,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 38px;
-  padding: 0 14px;
+  min-height: var(--ds-tap);
+  padding: 0 16px;
   border-radius: 999px;
   border: 1px solid var(--ds-line);
   background: var(--ds-card);
@@ -349,8 +349,11 @@
     }
   }
   .topbar {
+    /* In the page flow on phones: logo left, language right, both inside the screen and above the card. */
     position: static;
+    inset: auto;
     justify-content: space-between;
+    margin-bottom: 4px;
   }
   .mobile-logo {
     display: inline-flex;

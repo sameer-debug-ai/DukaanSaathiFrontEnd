@@ -184,6 +184,13 @@ input:-webkit-autofill:focus {
   text-align: center;
   color: var(--ds-muted);
   a {
+    /* 44px to tap without changing the line's look */
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--ds-tap);
+    min-width: var(--ds-tap);
+    justify-content: center;
+    margin-block: -12px;
     color: var(--ds-brand);
     font-weight: 600;
     text-decoration: none;
