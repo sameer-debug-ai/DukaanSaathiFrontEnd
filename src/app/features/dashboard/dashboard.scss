@@ -3,15 +3,28 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  min-width: 0;
+  > div {
+    min-width: 0;
+  }
   h1 {
     margin: 0;
-    font-size: 1.4rem;
+    font-size: var(--ds-text-xl);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ds-text-strong);
+    overflow-wrap: anywhere;
   }
   p {
     margin: 2px 0 0;
     color: var(--ds-muted);
-    font-size: 0.9rem;
+    font-size: var(--ds-text-sm);
+  }
+}
+@media (min-width: 640px) {
+  .hello h1 {
+    font-size: var(--ds-text-2xl);
   }
 }
 @media (max-width: 599.98px) {
@@ -27,17 +40,24 @@
 .stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 /* 7 tiles: on phones the last one spans the row instead of sitting alone. */
 .stats > :last-child {
   grid-column: span 2;
 }
+/* Tablet and up: money tiles 4 across, stock tiles 3 across: two full rows, nothing stretched. */
 @media (min-width: 768px) {
   .stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .stats > * {
+    grid-column: span 3;
+  }
+  .stats > :nth-child(n + 5) {
+    grid-column: span 4;
   }
 }
 /* Very wide screens fit all seven tiles in one row. */
@@ -45,45 +65,88 @@
   .stats {
     grid-template-columns: repeat(7, minmax(0, 1fr));
   }
-  .stats > :last-child {
+  .stats > *,
+  .stats > :nth-child(n + 5) {
     grid-column: auto;
   }
 }
 
 .low-name {
-  flex: 1 1 150px;
+  flex: 1 1 auto;
   min-width: 0;
   color: inherit;
   text-decoration: none;
+  .sub {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin-top: 2px;
+  }
+}
+.low-row {
+  min-height: 64px;
+}
+.reorder-btn {
+  flex-shrink: 0;
+}
+
+/* Amount column of a list row: amount on top, time below, both right-aligned. */
+.amount-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 2px;
+  strong {
+    font-variant-numeric: tabular-nums;
+  }
+  small {
+    font-size: 0.75rem;
+    color: var(--ds-muted);
+    white-space: nowrap;
+  }
 }
 
 .quick {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   a {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    min-height: 72px;
-    padding: 8px 4px;
-    border-radius: 14px;
+    gap: 6px;
+    min-height: 76px;
+    padding: 10px 4px;
+    border-radius: var(--ds-radius-lg);
     background: var(--ds-card);
     border: 1px solid var(--ds-line);
+    box-shadow: var(--ds-shadow-xs);
     color: var(--ds-text);
     text-decoration: none;
     font-size: 0.78rem;
-    font-weight: 500;
+    font-weight: 600;
+    line-height: 1.2;
     text-align: center;
+    transition:
+      border-color var(--ds-dur-fast) var(--ds-ease),
+      box-shadow var(--ds-dur-fast) var(--ds-ease);
     .material-symbols-outlined {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--ds-radius-sm);
+      background: var(--ds-brand-soft);
       color: var(--ds-brand);
-      font-size: 26px;
+      font-size: 22px;
     }
     &:hover {
-      border-color: var(--ds-brand);
+      border-color: var(--ds-brand-300);
+      box-shadow: var(--ds-shadow-sm);
     }
   }
 }
@@ -91,8 +154,8 @@
 .charts {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 @media (min-width: 1024px) {
   .charts {
@@ -104,7 +167,7 @@
 }
 
 .chart-card {
-  padding: 14px 14px 10px;
+  padding: 16px 16px 12px;
   min-width: 0;
 }
 .chart-head {
@@ -112,16 +175,20 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
   h2 {
     margin: 0;
-    font-size: 1rem;
+    font-size: var(--ds-text-base);
+    font-weight: 700;
   }
   p {
     margin: 2px 0 0;
     color: var(--ds-muted);
-    font-size: 0.85rem;
+    font-size: var(--ds-text-sm);
+    strong {
+      color: var(--ds-text);
+    }
   }
 }
 .chart-box {
@@ -132,7 +199,10 @@
 .lists {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 16px;
+  > .ds-card {
+    overflow: hidden;
+  }
 }
 @media (min-width: 1024px) {
   .lists {

@@ -88,19 +88,23 @@ import { IstDatePipe } from '../../shared/pipes/ist-date.pipe';
     }
   `,
   styles: `
-    .card { margin-bottom: 16px; overflow: hidden; }
-    .ds-section-title h2 .material-symbols-outlined { margin-right: 6px; }
+    .card { margin-bottom: 20px; overflow: hidden; }
+    .ds-section-title h2 { display: flex; align-items: center; }
+    .ds-section-title h2 .material-symbols-outlined { margin-right: 8px; font-size: 22px; }
     .link { color: var(--ds-brand); font-weight: 600; text-decoration: none; }
-    .grp { display: flex; align-items: center; gap: 6px; margin: 0; padding: 10px 16px 4px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .grp { display: flex; align-items: center; gap: 6px; margin: 0; padding: 12px 16px 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
     .grp.danger { color: var(--ds-danger); }
     .grp.warn { color: var(--ds-warn); }
     .count { padding: 0 7px; border-radius: 999px; background: var(--ds-surface); color: var(--ds-muted); font-size: 0.75rem; }
     .row, .who { color: inherit; text-decoration: none; }
-    .days { white-space: nowrap; font-size: 0.9rem; }
-    .days.danger { color: var(--ds-danger); }
-    .days.warn { color: var(--ds-warn); }
+    /* Compact rows: name + stock on the left, a coloured "~3 days" pill on the right. */
+    .row { min-height: 56px; padding-top: 10px; padding-bottom: 10px; }
+    .row:hover { background: var(--ds-hover); }
+    .days { white-space: nowrap; font-size: 0.82rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+    .days.danger { color: var(--ds-danger); background: var(--ds-danger-soft); }
+    .days.warn { color: var(--ds-warn); background: var(--ds-warn-soft); }
     .off-btn {
-      display: inline-flex; align-items: center; gap: 4px; min-height: 38px; padding: 0 12px; margin-left: 8px; flex-shrink: 0;
+      display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 12px; margin-left: 8px; flex-shrink: 0;
       border: 0; border-radius: 999px; background: var(--ds-danger-soft); color: var(--ds-danger); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer;
       &.ghost { background: var(--ds-surface); color: var(--ds-muted); }
       &:disabled { opacity: 0.5; }

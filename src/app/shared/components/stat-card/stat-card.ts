@@ -61,7 +61,10 @@ export type StatTone = 'brand' | 'ok' | 'danger' | 'warn' | 'neutral';
     }
     .label, .value, .hint { min-width: 0; }
     .hint { font-size: 0.78rem; color: var(--ds-muted); align-self: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    @media (max-width: 420px) { .value { font-size: 1.25rem; } }
+    @media (max-width: 420px) {
+      .tile { padding: 12px; min-height: 0; row-gap: 6px; }
+      .value { font-size: 1.25rem; }
+    }
   `,
   host: { class: 'stat-card' },
 })

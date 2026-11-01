@@ -114,13 +114,15 @@
         @if (s.lowStockProducts.length) {
           <div class="ds-list">
             @for (p of s.lowStockProducts; track p.id) {
-              <div class="ds-list-item flex-wrap">
+              <div class="ds-list-item low-row">
                 <a class="low-name" [routerLink]="['/products', p.id]">
                   <div class="title">{{ p.name }}</div>
-                  <div class="sub">{{ 'stock.left' | translate: { qty: p.currentStock, unit: p.unit } }} · {{ 'stock.minimum' | translate: { qty: p.lowStockThreshold } }}</div>
+                  <div class="sub">
+                    <app-stock-badge [status]="p.stockStatus" />
+                    <span>{{ 'stock.left' | translate: { qty: p.currentStock, unit: p.unit } }} · {{ 'stock.minimum' | translate: { qty: p.lowStockThreshold } }}</span>
+                  </div>
                 </a>
-                <app-stock-badge [status]="p.stockStatus" />
-                <button mat-stroked-button (click)="reorder(p.id, p.supplierId)">{{ 'dashboard.reorder' | translate }}</button>
+                <button mat-button class="reorder-btn" (click)="reorder(p.id, p.supplierId)">{{ 'dashboard.reorder' | translate }}</button>
               </div>
             }
           </div>
@@ -164,9 +166,12 @@
                 <span class="ds-badge txn" [class]="'ds-badge txn ' + txnIcon[r.kind].cls"><span class="material-symbols-outlined">{{ txnIcon[r.kind].icon }}</span></span>
                 <div class="flex-1 min-w-0">
                   <div class="title">{{ r.title }}</div>
-                  <div class="sub">{{ ('txn.' + r.kind) | translate }} · {{ r.subtitle }} · {{ r.date | istDate: true }}</div>
+                  <div class="sub" [attr.title]="r.subtitle">{{ ('txn.' + r.kind) | translate }} · {{ r.subtitle }}</div>
                 </div>
-                <strong class="tabular" [class.amount-credit]="r.kind === 'udhaar'" [class.amount-payment]="r.kind === 'payment'">{{ r.amount | inr }}</strong>
+                <span class="amount-col">
+                  <strong [class.amount-credit]="r.kind === 'udhaar'" [class.amount-payment]="r.kind === 'payment'">{{ r.amount | inr }}</strong>
+                  <small>{{ r.date | istDate: true }}</small>
+                </span>
               </a>
             }
           </div>
