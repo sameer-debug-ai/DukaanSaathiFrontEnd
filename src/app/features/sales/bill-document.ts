@@ -243,6 +243,8 @@ import { IstDatePipe } from '../../shared/pipes/ist-date.pipe';
     :host(.a4) .taxsum { margin-top: 12px; width: min(420px, 100%); }
     :host(.a4) .foot { display: flex; justify-content: space-between; align-items: flex-end; text-align: left; }
     :host(.a4) .sign { text-align: right; }
+    /* A4 preview on a phone screen: bill no. and date stacked instead of squeezed side by side. */
+    @media screen and (max-width: 520px) { :host(.a4) .meta { grid-template-columns: 1fr; } }
   `,
 })
 export class BillDocument {

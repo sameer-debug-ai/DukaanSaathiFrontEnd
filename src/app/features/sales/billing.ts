@@ -50,7 +50,27 @@ interface CartLine {
   templateUrl: './billing.html',
   styleUrl: './billing.scss',
   // GST shops: B2B buyer box (kept here so billing.scss stays within its size budget).
-  styles: `.b2b { display: grid; gap: 8px; } .b2b .field.small input { flex: 1; min-width: 0; text-align: left; } .b2b .uppercase { text-transform: uppercase; } .b2b .invalid { border-color: #b91c1c; }`,
+  styles: `
+    .b2b { display: grid; gap: 8px; } .b2b .field.small input { flex: 1; min-width: 0; text-align: left; } .b2b .uppercase { text-transform: uppercase; } .b2b .invalid { border-color: #b91c1c; }
+    /* Touch sizes (44px) for category chips, clear/close buttons, qty stepper, rate and small money fields. */
+    .billing .cat { height: var(--ds-tap); padding: 0 16px; }
+    .billing .clear-q, .billing .icon { width: var(--ds-tap); height: var(--ds-tap); }
+    .billing .stepper { height: var(--ds-tap); }
+    .billing .stepper button { width: var(--ds-tap); }
+    .billing .stepper input { width: 44px; }
+    .billing .rate { min-height: var(--ds-tap); padding: 0 10px; box-sizing: border-box; }
+    .billing .field.small { height: var(--ds-tap); }
+    /* More category chips off-screen: fade the edge so it's clear the row scrolls. */
+    .billing .cats { mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); padding-right: 24px; }
+    /* Out of stock: still readable (was too faded). */
+    .billing .tile.out { opacity: 0.72; }
+    .billing .tile.out .name { color: var(--ds-muted); }
+    /* Phones: the scan button sits right beside the search box, so the in-box scan hint is dropped to give the placeholder room. */
+    @media (max-width: 480px) {
+      .billing .search .scan { display: none; }
+      .billing .search-row { gap: 8px; }
+    }
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Billing implements OnInit {

@@ -97,9 +97,10 @@ const SIZES: PaperSize[] = ['58mm', '80mm', 'a4'];
   styles: `
     .paper { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 12px; }
     .paper .lbl { color: var(--ds-muted); font-size: 0.9rem; margin-right: 4px; }
-    .preview { background: #fff; border: 1px solid var(--ds-line); border-radius: 14px; padding: 16px; overflow-x: auto; }
-    .preview.thermal { display: flex; justify-content: center; background: var(--ds-surface); }
-    .preview.thermal app-bill-document { box-shadow: 0 2px 10px rgb(0 0 0 / 0.12); }
+    .preview { background: #fff; border: 1px solid var(--ds-line); border-radius: var(--ds-radius-lg); padding: 16px; overflow-x: auto; box-shadow: var(--ds-shadow-xs); }
+    /* Thermal sizes: the slip sits on a light tray, like paper coming out of the printer. */
+    .preview.thermal { display: flex; justify-content: center; padding: 20px 12px; background: var(--ds-hover); border-color: transparent; box-shadow: none; }
+    .preview.thermal app-bill-document { box-shadow: var(--ds-shadow-md); border-radius: 2px; }
     .cancelled { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; margin-bottom: 12px; border-left: 4px solid #b91c1c; }
     .cancelled .material-symbols-outlined { color: #b91c1c; }
     .cancelled p { margin: 2px 0 0; color: var(--ds-muted); }
