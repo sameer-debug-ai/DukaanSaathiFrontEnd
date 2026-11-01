@@ -65,6 +65,19 @@ interface CartLine {
     /* Out of stock: still readable (was too faded). */
     .billing .tile.out { opacity: 0.72; }
     .billing .tile.out .name { color: var(--ds-muted); }
+    /* Bill panel: the item list always keeps a good share of the height (qty can be changed while adding),
+       and a long checkout (customer, B2B, payment, discount, GST lines) scrolls on its own with Save pinned at its bottom. */
+    .billing .lines { flex: 1 1 auto; min-height: clamp(150px, 40vh, 360px); }
+    .billing .checkout { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+    .billing .checkout .save { position: sticky; bottom: 0; z-index: 1; flex-shrink: 0; }
+    /* Mouse screens (laptop/desktop): compact bill rows so 5-6 items fit; touch screens keep 44px controls. */
+    @media (pointer: fine) {
+      .billing .stepper { height: 36px; }
+      .billing .stepper button { width: 36px; min-height: 0; }
+      .billing .stepper input { width: 40px; }
+      .billing .rate { min-height: 26px; padding: 0 8px; }
+      .billing .line { padding-top: 8px; padding-bottom: 8px; }
+    }
     /* Phones: the scan button sits right beside the search box, so the in-box scan hint is dropped to give the placeholder room. */
     @media (max-width: 480px) {
       .billing .search .scan { display: none; }
