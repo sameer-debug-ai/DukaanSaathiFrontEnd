@@ -117,14 +117,14 @@ const DAY_CHOICES = [7, 15, 30];
     .line.zero { opacity: 0.55; }
     .qty { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; font-size: 0.85rem; color: var(--ds-muted); }
     .qty input {
-      width: 76px; min-height: 40px; padding: 0 8px; border: 1px solid var(--ds-line); border-radius: 10px;
+      width: 76px; min-height: 44px; padding: 0 8px; border: 1px solid var(--ds-line); border-radius: 10px;
       background: var(--ds-card); color: var(--ds-text); font: inherit; font-weight: 600; text-align: right;
     }
     .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px 16px; border-top: 1px solid var(--ds-line); }
     .est { display: flex; flex-direction: column; margin-right: auto; }
     .acts { display: flex; flex-wrap: wrap; gap: 8px; }
     .wa {
-      display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 16px; border-radius: 999px;
+      display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border-radius: 999px;
       background: #1f9d55; color: #fff; font-weight: 600; text-decoration: none;
       &.off { pointer-events: none; opacity: 0.5; }
     }

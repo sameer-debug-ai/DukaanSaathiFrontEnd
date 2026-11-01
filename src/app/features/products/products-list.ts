@@ -37,6 +37,15 @@ type StockFilter = 'all' | 'in' | 'low' | 'out';
   ],
   templateUrl: './products-list.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    /* Row actions: quiet until hovered; delete turns red so it's never mistaken for edit. */
+    .row-actions { white-space: nowrap; }
+    .row-actions button { color: var(--ds-muted); }
+    .row-actions button:hover { color: var(--ds-brand); }
+    .row-actions .danger-btn:hover { color: var(--ds-danger); }
+    /* Phone card: stock-adjust as a tinted round button so it reads as an action. */
+    .adjust-btn { flex-shrink: 0; background: var(--ds-brand-soft); color: var(--ds-brand); }
+  `,
 })
 export class ProductsList {
   /** Query params (component input binding): ?stock=low, ?add=1, ?category=Dairy */

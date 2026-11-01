@@ -134,7 +134,7 @@ import { Skeleton } from '../../shared/components/skeleton/skeleton';
     .meta { font-size: 0.82rem; color: var(--ds-muted); }
     .off { color: var(--ds-warn); font-weight: 600; }
     .icon-btn {
-      display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%;
+      display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%;
       background: transparent; color: var(--ds-muted); cursor: pointer;
     }
     .icon-btn:hover { background: var(--ds-surface); color: var(--ds-brand); }

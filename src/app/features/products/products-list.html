@@ -77,14 +77,14 @@
                 <div class="font-normal"><app-run-out [forecast]="p.forecast" [stock]="p.currentStock" /></div>
               </td>
               <td><app-stock-badge [status]="p.stockStatus" /></td>
-              <td class="num">
+              <td class="num row-actions">
                 <button mat-icon-button (click)="adjust(p, $event)" [matTooltip]="'stock.adjust' | translate" [attr.aria-label]="'stock.adjust' | translate">
                   <span class="material-symbols-outlined">swap_vert</span>
                 </button>
                 <button mat-icon-button (click)="$event.stopPropagation(); openForm(p)" [matTooltip]="'common.edit' | translate" [attr.aria-label]="'common.edit' | translate">
                   <span class="material-symbols-outlined">edit</span>
                 </button>
-                <button mat-icon-button (click)="remove(p, $event)" [matTooltip]="'common.delete' | translate" [attr.aria-label]="'common.delete' | translate">
+                <button mat-icon-button class="danger-btn" (click)="remove(p, $event)" [matTooltip]="'common.delete' | translate" [attr.aria-label]="'common.delete' | translate">
                   <span class="material-symbols-outlined">delete</span>
                 </button>
               </td>
@@ -106,7 +106,7 @@
               </div>
               <app-run-out [forecast]="p.forecast" [stock]="p.currentStock" />
             </div>
-            <button mat-icon-button (click)="adjust(p, $event)" [attr.aria-label]="'stock.adjust' | translate">
+            <button mat-icon-button class="adjust-btn" (click)="adjust(p, $event)" [attr.aria-label]="'stock.adjust' | translate">
               <span class="material-symbols-outlined">swap_vert</span>
             </button>
           </div>

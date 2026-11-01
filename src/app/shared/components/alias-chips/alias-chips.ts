@@ -36,16 +36,18 @@ import { TranslatePipe } from '@ngx-translate/core';
     .title { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
     .chip {
-      display: inline-flex; align-items: center; gap: 2px; height: 32px; padding: 0 4px 0 12px;
+      display: inline-flex; align-items: center; gap: 2px; height: 36px; padding: 0 4px 0 14px;
       border-radius: 999px; background: var(--ds-brand-soft); color: var(--ds-brand); font-size: 0.9rem; font-weight: 500;
     }
+    /* The × is small to look at but has a full 44px tap area (it overflows the chip invisibly). */
     .chip button {
-      display: grid; place-items: center; width: 26px; height: 26px; border: 0; border-radius: 50%;
+      margin: -4px -8px -4px -6px; min-height: 0;
+      display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%;
       background: transparent; color: inherit; cursor: pointer;
     }
-    .chip button:hover { background: rgb(0 0 0 / 0.08); }
+    .chip button:hover .material-symbols-outlined { background: rgb(0 0 0 / 0.08); }
     .chip button:disabled { opacity: 0.5; cursor: progress; }
-    .chip .material-symbols-outlined { font-size: 16px; }
+    .chip .material-symbols-outlined { font-size: 16px; padding: 4px; border-radius: 50%; }
     .empty { margin: 0; font-size: 0.85rem; color: var(--ds-muted); }
   `,
 })

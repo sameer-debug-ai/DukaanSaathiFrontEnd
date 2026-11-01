@@ -674,6 +674,15 @@ a,
   }
 }
 
+/* Destructive text/outlined buttons (Delete, Cancel bill…) read red; Material's own label colour otherwise wins. */
+.mat-mdc-button.text-danger,
+.mat-mdc-outlined-button.text-danger {
+  --mat-button-text-label-text-color: var(--ds-danger);
+  --mat-button-outlined-label-text-color: var(--ds-danger);
+  --mat-button-text-state-layer-color: var(--ds-danger);
+  --mat-button-outlined-state-layer-color: var(--ds-danger);
+}
+
 .text-ok {
   color: var(--ds-ok);
 }
